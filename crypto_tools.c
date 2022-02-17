@@ -12,6 +12,7 @@ void handleErrors(void)
 int prg(uint8_t* seed, uint8_t* output, int outputLen)
 {
     //TODO
+    //can probably mostly copy from the PRG used for the end of DPFs in Express
     return 1;
 }
 
