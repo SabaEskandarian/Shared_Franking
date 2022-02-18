@@ -7,12 +7,56 @@ void handleErrors(void)
     abort();
 }
 
-//This is the only function here that isn't just copied from openSSL documentation
-//initialize AES in CTR mode with IV 0 using seed as key
+//print out the data as a hex string
+void printHex(uint8_t* data, int len)
+{
+    for(int i = 0; i < len; i++)
+    {
+        printf("%x", data[i]);
+    }
+    printf("\n");
+}
+
+//initialize AES in CTR mode with IV 0 using seed as key, encrypt all zeros
 int prg(uint8_t* seed, uint8_t* output, int outputLen)
 {
-    //TODO
-    //can probably mostly copy from the PRG used for the end of DPFs in Express
+    uint8_t *zeros = (uint8_t*) malloc(outputLen);
+    memset(zeros, 0, outputLen);
+
+    int len = 0;
+    int finalLen = 0;
+    EVP_CIPHER_CTX *seedCtx;
+
+    //create ctx for PRG
+    if(!(seedCtx = EVP_CIPHER_CTX_new()))
+        handleErrors();
+
+
+    if(1 != EVP_EncryptInit_ex(seedCtx, EVP_aes_128_ctr(), NULL, seed, NULL))
+        handleErrors();
+
+    if(1 != EVP_EncryptUpdate(seedCtx, output, &len, zeros, outputLen))
+        handleErrors();
+
+    if(1 != EVP_EncryptFinal_ex(seedCtx, output+len, &finalLen))
+        handleErrors();
+
+    len += finalLen;
+
+    //These two messages should never be printed
+    if(len > outputLen)
+    {
+        printf("longer output than expected!\n");
+        return 0;
+    }
+    else if(len < outputLen)
+    {
+        printf("shorter output than expected!\n");
+        return 0;
+    }
+
+    free(zeros);
+
     return 1;
 }
 

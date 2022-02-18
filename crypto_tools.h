@@ -8,6 +8,7 @@
 
 
 int prg(uint8_t* seed, uint8_t* output, int outputLen);
+void printHex(uint8_t* data, int len);
 
 //From the openSSL documentation
 void handleErrors(void);

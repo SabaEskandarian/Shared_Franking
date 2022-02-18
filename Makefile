@@ -1,0 +1,18 @@
+CC=gcc
+LIBS=-lcrypto -lm
+CFLAGS=-I.
+DEPS = crypto_tools.h shared_franking.h
+
+
+%.o: %.c $(DEPS)
+		$(CC) -c -o $@ $< $(CFLAGS)
+
+shared_franking: crypto_tools.o shared_franking.o main.o
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+
+test: crypto_tools.o shared_franking.o test.o
+	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
+
+.PHONY: clean
+clean:
+	rm *.o test shared_franking

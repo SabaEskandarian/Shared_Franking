@@ -1,4 +1,3 @@
-#include "crypto_tools.h"
 #include "shared_franking.h"
 
 #include <stdio.h>
