@@ -25,9 +25,9 @@ int gcm_decrypt(unsigned char *ciphertext, int ciphertext_len,
                 unsigned char *iv, int iv_len,
                 unsigned char *plaintext);
 
-int hmac_it(const unsigned char *msg, size_t mlen, unsigned char **val, size_t *vlen, EVP_PKEY *pkey);
+int hmac_it(uint8_t* key, const unsigned char *msg, size_t mlen, unsigned char **val, size_t *vlen);
 
-int verify_it(const unsigned char *msg, size_t mlen, const unsigned char *val, size_t vlen, EVP_PKEY *pkey);
+int verify_it(uint8_t* key, const unsigned char *msg, size_t mlen, const unsigned char *val, size_t vlen);
 
 void digest_message(const unsigned char *message, size_t message_len, unsigned char **digest, unsigned int *digest_len);
 

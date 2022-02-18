@@ -194,8 +194,16 @@ int gcm_decrypt(unsigned char *ciphertext, int ciphertext_len,
 }
 
 
-int hmac_it(const unsigned char *msg, size_t mlen, unsigned char **val, size_t *vlen, EVP_PKEY *pkey)
+int hmac_it(uint8_t* key, const unsigned char *msg, size_t mlen, unsigned char **val, size_t *vlen)
 {
+
+    //set up EVP_PKEY for 256 bit (32 byte) hmac key
+    EVP_PKEY *pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_HMAC, NULL, key, 32);
+    if(!pkey)
+    {
+        goto err;
+    }
+
     /* Returned to caller */
     int result = 0;
     EVP_MD_CTX* ctx = NULL;
@@ -250,6 +258,7 @@ int hmac_it(const unsigned char *msg, size_t mlen, unsigned char **val, size_t *
 
  err:
     EVP_MD_CTX_free(ctx);
+    EVP_PKEY_free(pkey);
     if (!result) {
         OPENSSL_free(*val);
         *val = NULL;
@@ -257,8 +266,16 @@ int hmac_it(const unsigned char *msg, size_t mlen, unsigned char **val, size_t *
     return result;
 }
 
-int verify_it(const unsigned char *msg, size_t mlen, const unsigned char *val, size_t vlen, EVP_PKEY *pkey)
+int verify_it(uint8_t* key, const unsigned char *msg, size_t mlen, const unsigned char *val, size_t vlen)
 {
+
+    //set up EVP_PKEY for 256 bit (32 byte) hmac key
+    EVP_PKEY *pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_HMAC, NULL, key, 32);
+    if(!pkey)
+    {
+        goto err;
+    }
+
     /* Returned to caller */
     int result = 0;
     EVP_MD_CTX* ctx = NULL;
@@ -297,6 +314,7 @@ int verify_it(const unsigned char *msg, size_t mlen, const unsigned char *val, s
     result = (vlen == size) && (CRYPTO_memcmp(val, buff, size) == 0);
  err:
     EVP_MD_CTX_free(ctx);
+    EVP_PKEY_free(pkey);
     return result;
 }
 
