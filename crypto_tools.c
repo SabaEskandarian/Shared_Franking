@@ -18,38 +18,38 @@ void printHex(uint8_t* data, int len)
 }
 
 //initialize AES in CTR mode with IV 0 using seed as key, encrypt all zeros
-int prg(uint8_t* seed, uint8_t* output, int outputLen)
+int prg(uint8_t* seed, uint8_t* output, int output_len)
 {
-    uint8_t *zeros = (uint8_t*) malloc(outputLen);
-    memset(zeros, 0, outputLen);
+    uint8_t *zeros = (uint8_t*) malloc(output_len);
+    memset(zeros, 0, output_len);
 
     int len = 0;
-    int finalLen = 0;
-    EVP_CIPHER_CTX *seedCtx;
+    int final_len = 0;
+    EVP_CIPHER_CTX *seed_ctx;
 
     //create ctx for PRG
-    if(!(seedCtx = EVP_CIPHER_CTX_new()))
+    if(!(seed_ctx = EVP_CIPHER_CTX_new()))
         handleErrors();
 
 
-    if(1 != EVP_EncryptInit_ex(seedCtx, EVP_aes_128_ctr(), NULL, seed, NULL))
+    if(1 != EVP_EncryptInit_ex(seed_ctx, EVP_aes_128_ctr(), NULL, seed, NULL))
         handleErrors();
 
-    if(1 != EVP_EncryptUpdate(seedCtx, output, &len, zeros, outputLen))
+    if(1 != EVP_EncryptUpdate(seed_ctx, output, &len, zeros, output_len))
         handleErrors();
 
-    if(1 != EVP_EncryptFinal_ex(seedCtx, output+len, &finalLen))
+    if(1 != EVP_EncryptFinal_ex(seed_ctx, output+len, &final_len))
         handleErrors();
 
-    len += finalLen;
+    len += final_len;
 
     //These two messages should never be printed
-    if(len > outputLen)
+    if(len > output_len)
     {
         printf("longer output than expected!\n");
         return 0;
     }
-    else if(len < outputLen)
+    else if(len < output_len)
     {
         printf("shorter output than expected!\n");
         return 0;
@@ -193,8 +193,7 @@ int gcm_decrypt(unsigned char *ciphertext, int ciphertext_len,
     }
 }
 
-
-int hmac_it(uint8_t* key, const unsigned char *msg, size_t mlen, unsigned char **val, size_t *vlen)
+int hmac_it(uint8_t* key, const unsigned char *msg, size_t mlen, unsigned char *macRes)
 {
 
     //set up EVP_PKEY for 256 bit (32 byte) hmac key
@@ -210,11 +209,8 @@ int hmac_it(uint8_t* key, const unsigned char *msg, size_t mlen, unsigned char *
     size_t req = 0;
     int rc;
 
-    if(!msg || !mlen || !val || !pkey)
+    if(!msg || !mlen || !macRes || !pkey)
         return 0;
-
-    *val = NULL;
-    *vlen = 0;
 
     ctx = EVP_MD_CTX_new();
     if (ctx == NULL) {
@@ -240,16 +236,16 @@ int hmac_it(uint8_t* key, const unsigned char *msg, size_t mlen, unsigned char *
         goto err;
     }
 
-    *val = OPENSSL_malloc(req);
-    if (*val == NULL) {
-        printf("OPENSSL_malloc failed, error 0x%lx\n", ERR_get_error());
+    size_t macLen = req;
+    rc = EVP_DigestSignFinal(ctx, macRes, &macLen);
+    if (rc != 1) {
+        printf("EVP_DigestSignFinal failed (3), return code %d, error 0x%lx\n", rc, ERR_get_error());
         goto err;
     }
 
-    *vlen = req;
-    rc = EVP_DigestSignFinal(ctx, *val, vlen);
-    if (rc != 1) {
-        printf("EVP_DigestSignFinal failed (3), return code %d, error 0x%lx\n", rc, ERR_get_error());
+    if(macLen != 32)
+    {
+        printf("MAC wrong length!\n");
         goto err;
     }
 
@@ -259,15 +255,12 @@ int hmac_it(uint8_t* key, const unsigned char *msg, size_t mlen, unsigned char *
  err:
     EVP_MD_CTX_free(ctx);
     EVP_PKEY_free(pkey);
-    if (!result) {
-        OPENSSL_free(*val);
-        *val = NULL;
-    }
     return result;
 }
 
-int verify_it(uint8_t* key, const unsigned char *msg, size_t mlen, const unsigned char *val, size_t vlen)
+int verify_hmac(uint8_t* key, const unsigned char *msg, size_t mlen, const unsigned char *tag)
 {
+    size_t tagLen = 32;
 
     //set up EVP_PKEY for 256 bit (32 byte) hmac key
     EVP_PKEY *pkey = EVP_PKEY_new_raw_private_key(EVP_PKEY_HMAC, NULL, key, 32);
@@ -283,7 +276,7 @@ int verify_it(uint8_t* key, const unsigned char *msg, size_t mlen, const unsigne
     size_t size;
     int rc;
 
-    if(!msg || !mlen || !val || !vlen || !pkey)
+    if(!msg || !mlen || !tag || !pkey)
         return 0;
 
     ctx = EVP_MD_CTX_new();
@@ -311,7 +304,7 @@ int verify_it(uint8_t* key, const unsigned char *msg, size_t mlen, const unsigne
         goto err;
     }
 
-    result = (vlen == size) && (CRYPTO_memcmp(val, buff, size) == 0);
+    result = (tagLen == size) && (CRYPTO_memcmp(tag, buff, size) == 0);
  err:
     EVP_MD_CTX_free(ctx);
     EVP_PKEY_free(pkey);
@@ -319,9 +312,11 @@ int verify_it(uint8_t* key, const unsigned char *msg, size_t mlen, const unsigne
 }
 
 
-void digest_message(const unsigned char *message, size_t message_len, unsigned char **digest, unsigned int *digest_len)
+void digest_message(const unsigned char *message, size_t message_len, unsigned char *digest)
 {
 	EVP_MD_CTX *mdctx;
+
+    unsigned int digest_len = 0;
 
 	if((mdctx = EVP_MD_CTX_new()) == NULL)
 		handleErrors();
@@ -332,11 +327,14 @@ void digest_message(const unsigned char *message, size_t message_len, unsigned c
 	if(1 != EVP_DigestUpdate(mdctx, message, message_len))
 		handleErrors();
 
-	if((*digest = (unsigned char *)OPENSSL_malloc(EVP_MD_size(EVP_sha256()))) == NULL)
-		handleErrors();
-
-	if(1 != EVP_DigestFinal_ex(mdctx, *digest, digest_len))
+	if(1 != EVP_DigestFinal_ex(mdctx, digest, &digest_len))
 		handleErrors();
 
 	EVP_MD_CTX_free(mdctx);
+
+    if(digest_len != 32)
+    {
+        printf("sha256 output wrong length.\n");
+        handleErrors();
+    }
 }

@@ -7,7 +7,7 @@
 #include <string.h>
 
 
-int prg(uint8_t* seed, uint8_t* output, int outputLen);
+int prg(uint8_t* seed, uint8_t* output, int output_len);
 void printHex(uint8_t* data, int len);
 
 //From the openSSL documentation
@@ -25,10 +25,11 @@ int gcm_decrypt(unsigned char *ciphertext, int ciphertext_len,
                 unsigned char *iv, int iv_len,
                 unsigned char *plaintext);
 
-int hmac_it(uint8_t* key, const unsigned char *msg, size_t mlen, unsigned char **val, size_t *vlen);
+//expects 32 byte hmac key
+int hmac_it(uint8_t* key, const unsigned char *msg, size_t mlen, unsigned char *mac_res);
 
-int verify_it(uint8_t* key, const unsigned char *msg, size_t mlen, const unsigned char *val, size_t vlen);
+int verify_hmac(uint8_t* key, const unsigned char *msg, size_t mlen, const unsigned char *val);
 
-void digest_message(const unsigned char *message, size_t message_len, unsigned char **digest, unsigned int *digest_len);
+void digest_message(const unsigned char *message, size_t message_len, unsigned char *digest);
 
 #endif

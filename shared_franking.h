@@ -10,14 +10,14 @@
 #include <openssl/err.h>
 #include <string.h>
 
-void ccAEEnc(uint8_t* encKey, uint8_t* msg, int msgLen, uint8_t* iv, uint8_t* c1, uint8_t* c2);
-void ccAEDec(uint8_t* encKey,  uint8_t* iv, uint8_t* c1, uint8_t* c2, int msgLen, uint8_t* msg, uint8_t* fo);
-void ccAEVerify(uint8_t* msg, int msgLen, uint8_t* c2, uint8_t* fo);
+int ccAEEnc(uint8_t* encKey, uint8_t* msg, int msg_len, uint8_t* iv, uint8_t* c1_ct, uint8_t* c1_tag, uint8_t* c2);
+int ccAEDec(uint8_t* encKey,  uint8_t* iv, uint8_t* c1_ct, uint8_t* c1_tag, uint8_t* c2, int msg_len, uint8_t* msg, uint8_t* fo);
+int ccAEVerify(uint8_t* msg, int msgLen, uint8_t* c2, uint8_t* fo);
 
-void send(uint8_t* userKey, uint8_t* msg, int msgLen, int numServers, uint8_t* writeRequest_vector);
-void process(uint8_t* s, uint8_t* r, int ctShareLen, uint8_t* h, uint8_t* serverOut);
-void modProcess(int numServers, uint8_t* modKey, uint8_t* ctShare, int ctShareLen, uint8_t* r);
-void read(uint8_t* userKey, int numServers, int shareLen, int contextLen, int msgLen, uint8_t* msg, uint8_t* context, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector);
-void verify(uint8_t* modKey, int numServers, uint8_t* msg, int msgLen, uint8_t* context, int contextLen, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector);
+void send(uint8_t* user_key, uint8_t* msg, int msg_len, int num_servers, uint8_t* write_request_vector);
+void process(uint8_t* s, uint8_t* r, int ct_share_len, uint8_t* h, uint8_t* server_out);
+void modProcess(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_share_len, uint8_t* r);
+void read(uint8_t* user_key, int num_servers, int share_len, int context_len, int msg_len, uint8_t* msg, uint8_t* context, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector);
+void verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t* context, int context_len, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector);
 
 #endif
