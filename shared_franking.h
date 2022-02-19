@@ -8,11 +8,7 @@
 #include <openssl/conf.h>
 #include <openssl/evp.h>
 #include <openssl/err.h>
-#include <string.h>
-
-int ccAEEnc(uint8_t* encKey, uint8_t* msg, int msg_len, uint8_t* iv, uint8_t* c1_ct, uint8_t* c1_tag, uint8_t* c2);
-int ccAEDec(uint8_t* encKey,  uint8_t* iv, uint8_t* c1_ct, uint8_t* c1_tag, uint8_t* c2, int msg_len, uint8_t* msg, uint8_t* fo);
-int ccAEVerify(uint8_t* msg, int msgLen, uint8_t* c2, uint8_t* fo);
+#include <openssl/rand.h>
 
 void send(uint8_t* user_key, uint8_t* msg, int msg_len, int num_servers, uint8_t* write_request_vector);
 void process(uint8_t* s, uint8_t* r, int ct_share_len, uint8_t* h, uint8_t* server_out);
