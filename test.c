@@ -76,7 +76,7 @@ int main()
     uint8_t* iv = malloc(12);
     unsigned char* msg = "this is the message that will be encrypted";
     int msg_len = strlen(msg);
-    uint8_t* c1_ct = malloc(msg_len+32);
+    uint8_t* c1_ct = malloc(msg_len+32);//32 bytes bigger to hold encrypted fo
     uint8_t* c1_tag = malloc(16);
     uint8_t* c2 = malloc(32);
 
