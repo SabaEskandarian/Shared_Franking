@@ -99,6 +99,12 @@ int main()
         return 1;
     }
 
+    if(ct_len != msg_len+32)
+    {
+        printf("something wrong with c1 ct length\n");
+        return 1;
+    }
+
     uint8_t* pt = malloc(ct_len - 32);
     uint8_t* fo = malloc(32);
 
@@ -109,6 +115,7 @@ int main()
         printf("decryption failure\n");
         return 1;
     }
+
 
     if(strncmp(msg, pt, pt_len) != 0 || msg_len != pt_len)
     {
@@ -148,6 +155,8 @@ int main()
     free(c2);
     free(pt);
     free(fo);
+
+    //TODO test shared franking
 
     printf("tests done.\n");
 

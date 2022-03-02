@@ -16,9 +16,8 @@ void printHex(uint8_t* data, int len)
     printf("\n");
 }
 
-//TODO write tests for the ccAE functions after they're done before moving on to actual scheme.
 //iv size is 12
-//c1_ct size is msg_len
+//c1_ct size is msg_len + 32
 //c1_tag size is 16
 //c2 size is 32
 int ccAEEnc(uint8_t* enc_key, uint8_t* msg, int msg_len, uint8_t* iv, uint8_t* c1_ct, uint8_t* c1_tag, uint8_t* c2)
@@ -90,12 +89,6 @@ int ccAEEnc(uint8_t* enc_key, uint8_t* msg, int msg_len, uint8_t* iv, uint8_t* c
         /* Clean up */
         EVP_CIPHER_CTX_free(ctx);
         free(hmac_key);
-
-        if(ciphertext_len != msg_len+32)
-        {
-            printf("something wrong with c1 ct length\n");
-            return 0;
-        }
 
         return ciphertext_len;
 }
