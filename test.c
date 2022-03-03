@@ -261,14 +261,13 @@ int shared_franking_tests()
             return 0;
         }
 
-        //TODO verify
-
-
-        /*
-        int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uint8_t* msg, uint8_t* context, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector);
-
-        int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t* context, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector);
-        */
+        //verify
+        int verifies = verify(mod_key, num_servers, msg_recovered, recovered_len, ctx_recovered, c2, tag, fo, s_vector);
+        if(verifies != 1)
+        {
+            printf("moderator could not verify!\n");
+            return 0;
+        }
 
         //TODO additional tests where bits are flipped and we expect decryption/verification to fail
 

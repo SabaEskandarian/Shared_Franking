@@ -167,7 +167,7 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
     int pt_len = ccAEDec(user_key, c1_ct, c1_len, c1_tag, c2_pointer, plaintext, fo);
     if(pt_len < c1_len - 12)
     {
-        printf("decryption failure\n");
+        printf("decryption failure: pt length %d, c1_len %d\n", pt_len, c1_len);
         return 0;
     }
     //copy first part of pt to msg, set second part to be r
