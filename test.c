@@ -8,10 +8,9 @@
 #include <openssl/rand.h>
 #include <time.h>
 
-int main()
-{
-    printf("hello!\n");
 
+int basic_crypto_tests()
+{
     //test PRG
     uint8_t* seed = malloc(16);
     uint8_t* output = malloc(300);
@@ -19,13 +18,13 @@ int main()
     if(1 != RAND_priv_bytes(seed, 16))
     {
         printf("couldn't get randomness!\n");
-        return 1;
+        return 0;
     }
 
     if(1 != prg(seed, output, 300))
     {
         printf("prg fail\n");
-        return 1;
+        return 0;
     }
 
     //printHex(output, 300);
@@ -42,23 +41,25 @@ int main()
     if(1 != RAND_priv_bytes(hmacKey, 32))
     {
         printf("couldn't get randomness!\n");
-        return 1;
+        return 0;
     }
 
     if(1 != hmac_it(hmacKey, hmacMsg, mlen, mac))
     {
         printf("HMAC computation failed!\n");
-        return 1;
+        return 0;
     }
 
     if(1 != verify_hmac(hmacKey, hmacMsg, mlen, mac))
     {
         printf("HMAC verification failed!\n");
+        return 0;
     }
 
     if(1 == verify_hmac(hmacKey, hmacMsg2, mlen2, mac))
     {
         printf("HMAC failed to catch tampering! Check code.\n");
+        return 0;
     }
 
     free(hmacKey);
@@ -71,6 +72,11 @@ int main()
     //printHex(digest, 32);
     free(digest);
 
+    return 1;
+}
+
+int ccAE_tests()
+{
     //test ccAE
     uint8_t* enc_key = malloc(16);
     unsigned char* msg = "this is the message that will be encrypted";
@@ -82,7 +88,7 @@ int main()
     if(1 != RAND_priv_bytes(enc_key, 16))
     {
         printf("couldn't get randomness!\n");
-        return 1;
+        return 0;
     }
 
     int ct_len = ccAEEnc(enc_key, msg, msg_len, c1_ct, c1_tag, c2);
@@ -90,13 +96,13 @@ int main()
     if(ct_len < 1)
     {
         printf("encryption failure\n");
-        return 1;
+        return 0;
     }
 
     if(ct_len != 12+msg_len+32)
     {
         printf("something wrong with c1 ct length\n");
-        return 1;
+        return 0;
     }
 
     uint8_t* pt = malloc(ct_len - 32 - 12);
@@ -107,20 +113,20 @@ int main()
     if(pt_len < 1)
     {
         printf("decryption failure\n");
-        return 1;
+        return 0;
     }
 
 
     if(strncmp(msg, pt, pt_len) != 0 || msg_len != pt_len)
     {
         printf("decryption incorrect!\n");
-        return 1;
+        return 0;
     }
 
     if(1 != ccAEVerify(pt, pt_len, c2, fo))
     {
         printf("ccAE verification failure\n");
-        return 1;
+        return 0;
     }
 
 
@@ -128,7 +134,7 @@ int main()
     if(1 == ccAEVerify(pt, pt_len-1, c2, fo))
     {
         printf("ccAE verification failed to catch message of wrong length\n");
-        return 1;
+        return 0;
     }
 
     //now flip a bit and check that the ciphertext fails to decrypt
@@ -139,7 +145,7 @@ int main()
     if(pt_len_corrupt > 0)
     {
         printf("didn't catch corrupt CT\n");
-        return 1;
+        return 0;
     }
 
     free(enc_key);
@@ -149,31 +155,158 @@ int main()
     free(pt);
     free(fo);
 
+    return 1;
+}
+
+int shared_franking_tests()
+{
+
     //test shared franking
 
-    /*
-        int send(uint8_t* user_key, uint8_t* msg, int msg_len, int num_servers, uint8_t** write_request_vector);
-
-        int process(uint8_t* s, uint8_t* r, int ct_share_len, uint8_t* h, uint8_t* server_out);
-
-        int modProcess(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_share_len, uint8_t* r, uint8_t* context, uint8_t* s_hashes, uint8_t* server_out);
-
-        int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uint8_t* msg, uint8_t* context, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector);
-
-        int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t* context, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector);
-     */
-
-    int num_servers_2 = 2;
-    int num_servers_5 = 5;
+    int max_servers = 10;
     unsigned char* msg = "This is the message for shared franking.";
     int msg_len = strlen(msg);
     uint8_t* write_request_vector;
-    uint8_t* s_hashes = malloc(5*32); //just make it big enough for the bigger test
-    uint8_t* server_responses = malloc();
+    uint8_t* s_hashes = malloc(max_servers*32); //just make things big enough for the bigger test
+    int server_output_size = 12 + msg_len + 16 + 32 + (32 + CTX_LEN);
+    uint8_t* server_responses = malloc(max_servers*server_output_size);
+
+    uint8_t* msg_recovered = malloc(msg_len);
+    uint8_t* ctx_recovered = malloc(CTX_LEN);
+    uint8_t* context = malloc(CTX_LEN);
+    uint8_t* c2 = malloc(32);
+    uint8_t* tag = malloc(32);
+    uint8_t* fo = malloc(32);
+    uint8_t* s_vector = malloc(16*5);
+
+    uint8_t* user_key = malloc(16);
+    uint8_t* mod_key = malloc(16);
+
+    for(int num_servers = 2; num_servers < max_servers; num_servers++)
+    {
+        //pick random user and moderator keys
+        if(1 != RAND_priv_bytes(user_key, 16))
+        {
+            printf("couldn't get randomness!\n");
+            return 0;
+        }
+        if(1 != RAND_priv_bytes(mod_key, 16))
+        {
+            printf("couldn't get randomness!\n");
+            return 0;
+        }
+
+        //send
+        int write_request_vector_len = send(user_key, msg, msg_len, num_servers, &write_request_vector);
+        int expected_write_request_vector_len = 12+(msg_len+16+32)+16+32+16+32*(num_servers-1);
+        //expecting plaintext to be msg||r||fo
+        //then c1 = iv ||ciphertext||tag, c2 = hmac output
+        //then first write request has 16 byte r; other write requests are just (s,r), with |s|=|r|=16 bytes
+
+        if(write_request_vector_len != expected_write_request_vector_len)
+        {
+            printf("write request vector length does not match expectations (%d server case).\n", num_servers);
+            printf("write request length: %d, expected %d\n", write_request_vector_len, expected_write_request_vector_len);
+            printf("message length: %d\n", msg_len);
+            return 0;
+        }
+
+        //process
+        int ct_share_len = 12 + (msg_len+16+32) + 16 + 32;
+        uint8_t* s;
+        uint8_t* r;
+        uint8_t* h;
+        uint8_t* server_out;
+        for(int i = 1; i < num_servers; i++)
+        {
+            s = write_request_vector + ct_share_len + 16 + (i-1)*32;
+            r = write_request_vector + ct_share_len + i*32;
+            h = s_hashes + i*32;
+            server_out = server_responses + i*server_output_size;
+
+            if(1 != process(s, r, ct_share_len, h, server_out))
+            {
+                printf("couldn't process (server number: %d, total servers: %d)\n", i, num_servers);
+                return 0;
+            }
+        }
+        //moderator needs to process last
+        r = write_request_vector + ct_share_len;
+        memset(context, 'c', 32);
+        server_out = server_responses;
+        if(1 != mod_process(num_servers, mod_key, write_request_vector, ct_share_len, r, context, s_hashes, server_out))
+        {
+            printf("moderator couldn't process (total servers: %d)\n", num_servers);
+            return 0;
+        }
+
+        //TODO read is failing with decryption failure, need to debug
+        //read
+        int share_len = ct_share_len + CTX_LEN + 32;
+        int recovered_len = read(user_key, num_servers, server_responses, share_len, msg_recovered, ctx_recovered, c2, tag, fo, s_vector);
+        if(recovered_len != msg_len)
+        {
+            printf("recovered message incorrect length\n");
+            printf("expected %d, got %d\n", msg_len, recovered_len);
+            return 0;
+        }
+        if(memcmp(msg, msg_recovered, recovered_len) != 0)
+        {
+            printf("recovered message incorrect!\n");
+            return 0;
+        }
+        if(memcmp(context, ctx_recovered, CTX_LEN) != 0)
+        {
+            printf("recovered incorrect context!\n");
+            return 0;
+        }
+
+        //TODO verify
 
 
+        /*
+        int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uint8_t* msg, uint8_t* context, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector);
 
-    printf("tests done.\n");
+        int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t* context, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector);
+        */
 
-    return 0;
+        //TODO additional tests where bits are flipped and we expect decryption/verification to fail
+
+        return 1;
+
+    }
+
+    free(write_request_vector);
+    free(s_hashes);
+    free(server_responses);
+    free(msg_recovered);
+    free(ctx_recovered);
+    free(context);
+    free(c2);
+    free(tag);
+    free(fo);
+    free(s_vector);
+    free(mod_key);
+    free(user_key);
+}
+
+
+int main()
+{
+    printf("hello!\n");
+
+    int basic_result = basic_crypto_tests();
+    int ccAE_result = ccAE_tests();
+    int franking_result = shared_franking_tests();
+
+    if(basic_result == 1 && ccAE_result == 1 && franking_result == 1)
+    {
+        printf("tests passed.\n");
+        return 0;
+    }
+    else
+    {
+        printf("tests failed.\n");
+        return 1;
+    }
 }

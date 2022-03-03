@@ -99,7 +99,7 @@ int process(uint8_t* s, uint8_t* r, int ct_share_len, uint8_t* h, uint8_t* serve
 //input mod_key has length 16
 //input r has length 16
 //output server_out is ct_share_len + (\ell + |ctx|) = ct_share_len + (32 + CTX_LEN)
-int modProcess(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_share_len, uint8_t* r, uint8_t* context, uint8_t* s_hashes, uint8_t* server_out)
+int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_share_len, uint8_t* r, uint8_t* context, uint8_t* s_hashes, uint8_t* server_out)
 {
     //copy ct to server output
     memcpy(server_out, ct_share, ct_share_len);
