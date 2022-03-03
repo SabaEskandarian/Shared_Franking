@@ -17,10 +17,10 @@ void printHex(uint8_t* data, int len)
 }
 
 //iv size is 12
-//c1_ct size is msg_len + 32
+//c1_ct size is iv size + msg_len + 32
 //c1_tag size is 16
 //c2 size is 32
-int ccAEEnc(uint8_t* enc_key, uint8_t* msg, int msg_len, uint8_t* iv, uint8_t* c1_ct, uint8_t* c1_tag, uint8_t* c2)
+int ccAEEnc(uint8_t* enc_key, uint8_t* msg, int msg_len, uint8_t* c1_ct, uint8_t* c1_tag, uint8_t* c2)
 {
         //get 32 bytes of commitment randomness which will serve as an HMAC key
         uint8_t* hmac_key = malloc(32);
@@ -37,8 +37,16 @@ int ccAEEnc(uint8_t* enc_key, uint8_t* msg, int msg_len, uint8_t* iv, uint8_t* c
             return 0;
         }
 
+        //generate a random 12 byte IV and put it at the beginning of c1_ct
+        if(1 != RAND_priv_bytes(c1_ct, 12))
+        {
+            printf("couldn't get randomness!\n");
+            return 0;
+        }
+
+        uint8_t* iv = c1_ct; //for convenience
+
         //encrypt msg||hmac_key with hmac as the aad
-        //use provided IV for encryption
         EVP_CIPHER_CTX *ctx;
         int len;
         int ciphertext_len;
@@ -66,11 +74,11 @@ int ccAEEnc(uint8_t* enc_key, uint8_t* msg, int msg_len, uint8_t* iv, uint8_t* c
         * Provide the message to be encrypted, and obtain the encrypted output.
         * EVP_EncryptUpdate can be called multiple times if necessary
         */
-        if(1 != EVP_EncryptUpdate(ctx, c1_ct, &len, msg, msg_len))
+        if(1 != EVP_EncryptUpdate(ctx, c1_ct+12, &len, msg, msg_len))
             handleErrors();
         ciphertext_len = len;
 
-        if(1 != EVP_EncryptUpdate(ctx, c1_ct+len, &len, hmac_key, 32))
+        if(1 != EVP_EncryptUpdate(ctx, c1_ct+12+len, &len, hmac_key, 32))
             handleErrors();
         ciphertext_len += len;
 
@@ -78,7 +86,7 @@ int ccAEEnc(uint8_t* enc_key, uint8_t* msg, int msg_len, uint8_t* iv, uint8_t* c
         * Finalise the encryption. Normally ciphertext bytes may be written at
         * this stage, but this does not occur in GCM mode
         */
-        if(1 != EVP_EncryptFinal_ex(ctx, c1_ct + ciphertext_len, &len))
+        if(1 != EVP_EncryptFinal_ex(ctx, c1_ct+ 12 + ciphertext_len, &len))
             handleErrors();
         ciphertext_len += len;
 
@@ -90,17 +98,18 @@ int ccAEEnc(uint8_t* enc_key, uint8_t* msg, int msg_len, uint8_t* iv, uint8_t* c
         EVP_CIPHER_CTX_free(ctx);
         free(hmac_key);
 
-        return ciphertext_len;
+        return ciphertext_len+12;
 }
 
-int ccAEDec(uint8_t* enc_key,  uint8_t* iv, uint8_t* c1_ct, int c1_ct_len, uint8_t* c1_tag, uint8_t* c2, uint8_t* msg, uint8_t* fo)
+int ccAEDec(uint8_t* enc_key, uint8_t* c1_ct, int c1_ct_len, uint8_t* c1_tag, uint8_t* c2, uint8_t* msg, uint8_t* fo)
 {
     EVP_CIPHER_CTX *ctx;
     int len;
     int plaintext_len;
     int ret;
 
-    uint8_t* plaintext = malloc(c1_ct_len);
+    uint8_t* plaintext = malloc(c1_ct_len-12);//iv is in front of encrypted message
+    uint8_t* iv = c1_ct; //for convenience
 
     /* Create and initialise the context */
     if(!(ctx = EVP_CIPHER_CTX_new()))
@@ -125,7 +134,7 @@ int ccAEDec(uint8_t* enc_key,  uint8_t* iv, uint8_t* c1_ct, int c1_ct_len, uint8
      * Provide the message to be decrypted, and obtain the plaintext output.
      * EVP_DecryptUpdate can be called multiple times if necessary
      */
-    if(!EVP_DecryptUpdate(ctx, plaintext, &len, c1_ct, c1_ct_len))
+    if(!EVP_DecryptUpdate(ctx, plaintext, &len, c1_ct+12, c1_ct_len-12))
         handleErrors();
 
     plaintext_len = len;
@@ -145,7 +154,7 @@ int ccAEDec(uint8_t* enc_key,  uint8_t* iv, uint8_t* c1_ct, int c1_ct_len, uint8
      */
     ret = EVP_DecryptFinal_ex(ctx, plaintext + len, &len);
 
-    if (len != 0 || c1_ct_len != plaintext_len + 32){
+    if (len != 0 || c1_ct_len-12 != plaintext_len + 32){
         printf("something's wrong with lengths\n");
         handleErrors();
     }

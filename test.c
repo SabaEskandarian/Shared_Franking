@@ -73,10 +73,9 @@ int main()
 
     //test ccAE
     uint8_t* enc_key = malloc(16);
-    uint8_t* iv = malloc(12);
     unsigned char* msg = "this is the message that will be encrypted";
     int msg_len = strlen(msg);
-    uint8_t* c1_ct = malloc(msg_len+32);//32 bytes bigger to hold encrypted fo
+    uint8_t* c1_ct = malloc(12+msg_len+32);//32 bytes bigger to hold encrypted fo, 12 bytes bigger for iv at beginning
     uint8_t* c1_tag = malloc(16);
     uint8_t* c2 = malloc(32);
 
@@ -85,13 +84,8 @@ int main()
         printf("couldn't get randomness!\n");
         return 1;
     }
-    if(1 != RAND_priv_bytes(iv, 12))
-    {
-        printf("couldn't get randomness!\n");
-        return 1;
-    }
 
-    int ct_len = ccAEEnc(enc_key, msg, msg_len, iv, c1_ct, c1_tag, c2);
+    int ct_len = ccAEEnc(enc_key, msg, msg_len, c1_ct, c1_tag, c2);
 
     if(ct_len < 1)
     {
@@ -99,16 +93,16 @@ int main()
         return 1;
     }
 
-    if(ct_len != msg_len+32)
+    if(ct_len != 12+msg_len+32)
     {
         printf("something wrong with c1 ct length\n");
         return 1;
     }
 
-    uint8_t* pt = malloc(ct_len - 32);
+    uint8_t* pt = malloc(ct_len - 32 - 12);
     uint8_t* fo = malloc(32);
 
-    int pt_len = ccAEDec(enc_key, iv, c1_ct, ct_len, c1_tag, c2, pt, fo);
+    int pt_len = ccAEDec(enc_key, c1_ct, ct_len, c1_tag, c2, pt, fo);
 
     if(pt_len < 1)
     {
@@ -140,7 +134,7 @@ int main()
     //now flip a bit and check that the ciphertext fails to decrypt
     c1_ct[0] = c1_ct[0] ^ 1;
 
-    int pt_len_corrupt = ccAEDec(enc_key, iv, c1_ct, ct_len, c1_tag, c2, pt, fo);
+    int pt_len_corrupt = ccAEDec(enc_key, c1_ct, ct_len, c1_tag, c2, pt, fo);
 
     if(pt_len_corrupt > 0)
     {
@@ -149,7 +143,6 @@ int main()
     }
 
     free(enc_key);
-    free(iv);
     free(c1_ct);
     free(c1_tag);
     free(c2);
@@ -157,6 +150,10 @@ int main()
     free(fo);
 
     //TODO test shared franking
+
+
+
+
 
     printf("tests done.\n");
 
