@@ -36,6 +36,11 @@ int send(uint8_t* user_key, uint8_t* msg, int msg_len, int num_servers, uint8_t*
             return 0;
         }
 
+        //DEBUG
+        //printHex(results, c1_ct_len);
+        //printf("c1_ct_len %d\n", c1_ct_len);
+
+
         //use PRG on r to get r_i for i\in 1...num_servers and s_i for s\in 2...num_servers
         //NOTE: these are interpreted as r_1, s_2,r_2, etc
         if(1 != prg(r, results+ct_len, prg_output_len))
@@ -43,6 +48,23 @@ int send(uint8_t* user_key, uint8_t* msg, int msg_len, int num_servers, uint8_t*
             printf("error in PRG\n");
             return 0;
         }
+
+        //DEBUG
+        /*for(int i = 0; i < num_servers; i++)
+        {
+            printf("send: r_%d: ", i);
+            printHex(results+ct_len+32*i, 16);
+
+            if(i>0)
+            {
+                printf("send: s_%d: ", i);
+                printHex(results+ct_len+16+32*(i-1), 16);
+            }
+        }*/
+        //DEBUG
+        printf("ct_len: %d\n", ct_len);
+        printf("send: ct: ");
+        printHex(results, ct_len);
 
         //for each s_i, i\in2,...,num_servers, take G(s_i) with output length ct_len and xor into ct
         uint8_t* s_i_prg_output = malloc(ct_len);
@@ -58,6 +80,10 @@ int send(uint8_t* user_key, uint8_t* msg, int msg_len, int num_servers, uint8_t*
             {
                 results[j] = results[j] ^ s_i_prg_output[j];
             }
+
+            //DEBUG
+            printf("send: ct mask %d: ", i);
+            printHex(s_i_prg_output, ct_len);
         }
 
         //results holds the share [c]_1, r_1 followed by (s_i,r_i) for i\in {2,...,num_servers}
@@ -92,6 +118,12 @@ int process(uint8_t* s, uint8_t* r, int ct_share_len, uint8_t* h, uint8_t* serve
         printf("error in PRG\n");
         return 0;
     }
+
+
+
+    //DEBUG
+    printf("process: ct mask: ");
+    printHex(server_out, ct_share_len);
 
     return 1;
 }
@@ -133,6 +165,10 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
         server_out[ct_share_len + i] = server_out[ct_share_len + i] ^ mask[i];
     }
 
+    //DEBUG
+    //printf("mod_process: r = ");
+    //printHex(r, 16);
+
     free(tag_data);
     free(mask);
 
@@ -140,7 +176,7 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
 }
 
 //returns message length
-int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uint8_t* msg, uint8_t* context, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector)
+int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uint8_t* msg, uint8_t* r, uint8_t* c2, uint8_t* c3, uint8_t* fo)
 {
     //merge shares
     uint8_t* merged_ct = malloc(share_len);
@@ -159,124 +195,202 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
     uint8_t* c1_ct = merged_ct; //c1 is main ciphertext (incl. iv)
     uint8_t* c1_tag = merged_ct + c1_len;
     uint8_t* c2_pointer = merged_ct + c1_len + 16; //c2 is the compactly committing tag
-    uint8_t* c3 = merged_ct + c1_len + 16 + 32; //c3 is masked (ctx,\sigma)
+    uint8_t* c3_pointer = merged_ct + c1_len + 16 + 32; //c3 is masked (ctx,\sigma)
 
-    uint8_t* plaintext = malloc(c1_len - 12);//c1 has iv in front of encrypted plaintext
+    uint8_t* plaintext = malloc(c1_len - 12 - 32);//c1 has iv in front of encrypted plaintext and fo in back
+
+    //printHex(c1_ct, c1_len);
 
     //decrypt c1,c2 to get m,r,fo
     int pt_len = ccAEDec(user_key, c1_ct, c1_len, c1_tag, c2_pointer, plaintext, fo);
-    if(pt_len < c1_len - 12)
+    if(pt_len < c1_len - 12 - 32)
     {
         printf("decryption failure: pt length %d, c1_len %d\n", pt_len, c1_len);
         return 0;
     }
-    //copy first part of pt to msg, set second part to be r
+    //copy first part of pt to msg, second part to r
     memcpy(msg, plaintext, pt_len - 16);
-    uint8_t* r = plaintext + pt_len - 16;
-
-    //use PRG on r to get r_i for i\in 1...num_servers and s_i for s\in 2...num_servers
-    //NOTE: these are interpreted as r_1, s_2,r_2, etc
-    int prg_output_len = (2*num_servers-1)*16;
-    uint8_t* prg_outputs = malloc(prg_output_len);
-    if(1 != prg(r, prg_outputs, prg_output_len))
-    {
-        printf("error in PRG\n");
-        return 0;
-    }
-
-    int mask_len = CTX_LEN + 32;
-    uint8_t* mask = malloc(mask_len);
-    uint8_t* ri;
-    uint8_t* si;
-
-    for(int i = 0; i < num_servers; i++)
-    {
-        ri = prg_outputs + i*32;
-        //use r_i to generate ith server's mask and xor into c3
-        if(1 != prg(ri, mask, mask_len))
-        {
-            printf("error in PRG\n");
-            return 0;
-        }
-        for(int j = 0; j < mask_len; j++)
-        {
-            c3[j] = c3[j] ^ mask[j];
-        }
-
-        //for i>0, copy s_i into the output s_vector
-        if(i > 0)
-        {
-            si = ri - 16;
-            memcpy(s_vector + (i-1)*16, si, 16);
-        }
-    }
-
-    //copy unmasked (ctx,\sigma) to correct locations
-    memcpy(context, c3, CTX_LEN);
-    memcpy(tag, c3+CTX_LEN, 32);
+    memcpy(r, plaintext + pt_len - 16, 16);
 
     //copy c2_pointer to c2 output
     memcpy(c2, c2_pointer, 32);
 
+    //copy c3_pointer to c3 output
+    memcpy(c3, c3_pointer, CTX_LEN + 32);
+
     free(merged_ct);
     free(plaintext);
-    free(prg_outputs);
-    free(mask);
 
     return pt_len - 16;
 }
+//
+//TODO: update verify to match new version of scheme
 
-//1 is accept, 0 is reject
-int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t* context, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector)
+//old version of read
+//returns message length
+// int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uint8_t* msg, uint8_t* context, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector)
+// {
+//     //merge shares
+//     uint8_t* merged_ct = malloc(share_len);
+//     //copy in first share
+//     memcpy(merged_ct, shares, share_len);
+//     //xor in remaining shares
+//     for(int i = 1; i < num_servers; i++)
+//     {
+//         for(int j = 0; j < share_len; j++)
+//         {
+//             merged_ct[j] = merged_ct[j] ^ shares[i*share_len + j];
+//         }
+//     }
+//
+//     //DEBUG
+//     printf("share_len: %d\n", share_len);
+//     printf("read: ct: ");
+//     printHex(merged_ct, share_len);
+//
+//     int c1_len = share_len - (CTX_LEN + 32) - 32 - 16;
+//     uint8_t* c1_ct = merged_ct; //c1 is main ciphertext (incl. iv)
+//     uint8_t* c1_tag = merged_ct + c1_len;
+//     uint8_t* c2_pointer = merged_ct + c1_len + 16; //c2 is the compactly committing tag
+//     uint8_t* c3 = merged_ct + c1_len + 16 + 32; //c3 is masked (ctx,\sigma)
+//
+//     uint8_t* plaintext = malloc(c1_len - 12 - 32);//c1 has iv in front of encrypted plaintext and fo in back
+//
+//     //printHex(c1_ct, c1_len);
+//
+//     //decrypt c1,c2 to get m,r,fo
+//     int pt_len = ccAEDec(user_key, c1_ct, c1_len, c1_tag, c2_pointer, plaintext, fo);
+//     if(pt_len < c1_len - 12 - 32)
+//     {
+//         printf("decryption failure: pt length %d, c1_len %d\n", pt_len, c1_len);
+//         return 0;
+//     }
+//     //copy first part of pt to msg, set second part to be r
+//     memcpy(msg, plaintext, pt_len - 16);
+//     uint8_t* r = plaintext + pt_len - 16;
+//
+//     //use PRG on r to get r_i for i\in 1...num_servers and s_i for s\in 2...num_servers
+//     //NOTE: these are interpreted as r_1, s_2,r_2, etc
+//     int prg_output_len = (2*num_servers-1)*16;
+//     uint8_t* prg_outputs = malloc(prg_output_len);
+//     if(1 != prg(r, prg_outputs, prg_output_len))
+//     {
+//         printf("error in PRG\n");
+//         return 0;
+//     }
+//
+//     int mask_len = CTX_LEN + 32;
+//     uint8_t* mask = malloc(mask_len);
+//     uint8_t* ri;
+//     uint8_t* si;
+//
+//     for(int i = 0; i < num_servers; i++)
+//     {
+//         ri = prg_outputs + i*32;
+//         //use r_i to generate ith server's mask and xor into c3
+//         if(1 != prg(ri, mask, mask_len))
+//         {
+//             printf("error in PRG\n");
+//             return 0;
+//         }
+//         for(int j = 0; j < mask_len; j++)
+//         {
+//             c3[j] = c3[j] ^ mask[j];
+//         }
+//
+//         //for i>0, copy s_i into the output s_vector
+//         if(i > 0)
+//         {
+//             si = ri - 16;
+//             memcpy(s_vector + (i-1)*16, si, 16);
+//         }
+//
+//         //DEBUG
+//         /*
+//         printf("read: r_%d = ", i);
+//         printHex(ri, 16);
+//         if(i>0)
+//         {
+//             printf("read: s_%d = ", i);
+//             printHex(si, 16);
+//         }
+//         */
+//     }
+//
+//     //copy unmasked (ctx,\sigma) to correct locations
+//     memcpy(context, c3, CTX_LEN);
+//     memcpy(tag, c3+CTX_LEN, 32);
+//
+//     //copy c2_pointer to c2 output
+//     memcpy(c2, c2_pointer, 32);
+//
+//     free(merged_ct);
+//     free(plaintext);
+//     free(prg_outputs);
+//     free(mask);
+//
+//     return pt_len - 16;
+// }
+
+int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t* r, uint8_t* c2, uint8_t* c3, uint8_t* fo)
 {
-    int mac_data_len = 32 + num_servers*32 + CTX_LEN;
-    uint8_t* mac_data = malloc(mac_data_len); // will hold ([c_2]_1, (H(s_2), ..., H(s_N)), ctx)
-
-    int fail = 0;
-    int result = 1;
-
-    //compute [c_2]_1, put it in the beginning of the mac data
-    //also compute the hashes of the s_vector values and put them in mac data after [c_2]_1
-    memcpy(mac_data, c2, 32);
-    int full_ct_len = 12 + msg_len + 16 + 32; //size of (c1, c2) includes iv, msg, c1_tag, c2
-    uint8_t* share = malloc(full_ct_len);
-    for(int i = 1; i < num_servers; i++)
-    {
-        if(1 != prg(s_vector + (i-1)*16, share, full_ct_len))
-        {
-            printf("error in PRG\n");
-            return 0;
-        }
-
-        for(int j = 0; j < 32; j++)
-        {
-            mac_data[j] = mac_data[j] ^ share[full_ct_len - 32 + j];
-        }
-
-        //set appropriate part of data to (32 bytes) to be hash of s_i (16 bytes)
-        digest_message(s_vector + 16*(i-1), 16, mac_data + 32 + 16*(i-1));
-    }
-
-    //copy ctx to mac data
-    memcpy(mac_data + mac_data_len - CTX_LEN, context, CTX_LEN);
-
-    if(1 != verify_hmac(mod_key, mac_data, mac_data_len, tag))
-    {
-        fail = 1;
-    }
-
-    if(1 != ccAEVerify(msg, msg_len, c2, fo))
-    {
-        fail = 1;
-    }
-
-    if(fail == 1)
-    {
-        result = 0;
-    }
-
-    free(mac_data);
-    free(share);
-
-    return result;
+    return 1;
 }
+
+//old version of verify
+// //1 is accept, 0 is reject
+// int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t* context, uint8_t* c2, uint8_t* tag, uint8_t* fo, uint8_t* s_vector)
+// {
+//     int mac_data_len = 32 + num_servers*32 + CTX_LEN;
+//     uint8_t* mac_data = malloc(mac_data_len); // will hold ([c_2]_1, (H(s_2), ..., H(s_N)), ctx)
+//
+//     int fail = 0;
+//     int result = 1;
+//
+//     //compute [c_2]_1, put it in the beginning of the mac data
+//     //also compute the hashes of the s_vector values and put them in mac data after [c_2]_1
+//     memcpy(mac_data, c2, 32);
+//     int full_ct_len = 12 + msg_len + 16 + 32; //size of (c1, c2) includes iv, msg, c1_tag, c2
+//     uint8_t* share = malloc(full_ct_len);
+//     for(int i = 1; i < num_servers; i++)
+//     {
+//         if(1 != prg(s_vector + (i-1)*16, share, full_ct_len))
+//         {
+//             printf("error in PRG\n");
+//             return 0;
+//         }
+//
+//         for(int j = 0; j < 32; j++)
+//         {
+//             mac_data[j] = mac_data[j] ^ share[full_ct_len - 32 + j];
+//         }
+//
+//         //set appropriate part of data to (32 bytes) to be hash of s_i (16 bytes)
+//         digest_message(s_vector + 16*(i-1), 16, mac_data + 32 + 16*(i-1));
+//     }
+//
+//     //copy ctx to mac data
+//     memcpy(mac_data + mac_data_len - CTX_LEN, context, CTX_LEN);
+//
+//     if(1 != verify_hmac(mod_key, mac_data, mac_data_len, tag))
+//     {
+//         fail = 1;
+//         printf("failed hmac verification\n");
+//     }
+//
+//     if(1 != ccAEVerify(msg, msg_len, c2, fo))
+//     {
+//         fail = 1;
+//         printf("failed ccAE verification\n");
+//     }
+//
+//     if(fail == 1)
+//     {
+//         result = 0;
+//     }
+//
+//     free(mac_data);
+//     free(share);
+//
+//     return result;
+// }
