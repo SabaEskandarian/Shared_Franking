@@ -172,7 +172,6 @@ int shared_franking_tests()
     uint8_t* server_responses = malloc(max_servers*server_output_size);
 
     uint8_t* msg_recovered = malloc(msg_len);
-    uint8_t* ctx_recovered = malloc(CTX_LEN);
     uint8_t* context = malloc(CTX_LEN);
     uint8_t* c2 = malloc(32);
     uint8_t* c3 = malloc(CTX_LEN + 32);
@@ -279,7 +278,6 @@ int shared_franking_tests()
     free(s_hashes);
     free(server_responses);
     free(msg_recovered);
-    free(ctx_recovered);
     free(context);
     free(c2);
     free(c3);
