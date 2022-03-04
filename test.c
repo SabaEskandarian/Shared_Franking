@@ -254,7 +254,6 @@ int shared_franking_tests()
             return 0;
         }
 
-
 //         //verify TODO
 //         int verifies = verify(mod_key, num_servers, msg_recovered, recovered_len, ctx_recovered, c2, tag, fo, s_vector);
 //         if(verifies != 1)
@@ -268,6 +267,8 @@ int shared_franking_tests()
 //             return 0;
 //         }
 //
+//TODO make a copy of c3 for other tests because verification modifies it
+
 //         //TODO additional tests where bits are flipped and we expect decryption/verification to fail
 
         return 1;
