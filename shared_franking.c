@@ -243,7 +243,7 @@ int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t
         c3[j] = c3[j] ^ share[j];
     }
 
-    for(int i = 0; i < num_servers; i++)
+    for(int i = 1; i < num_servers; i++)
     {
         si = prg_outputs + 16*i;
 
@@ -257,12 +257,6 @@ int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t
             return 0;
         }
 
-        //contribute to unmasking c3
-        for(int j = 0; j < mask_len; j++)
-        {
-            c3[j] = c3[j] ^ share[full_ct_len+j];
-        }
-
         //contribute to recovering [c_2]_1
         for(int j = 0; j < 32; j++)
         {
@@ -270,8 +264,14 @@ int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t
             mac_data[j] = mac_data[j] ^ share[full_ct_len - 32 + j];
         }
 
+        //contribute to unmasking c3
+        for(int j = 0; j < mask_len; j++)
+        {
+            c3[j] = c3[j] ^ share[full_ct_len+j];
+        }
+
         //set appropriate part of data to (32 bytes) to be hash of s_i (16 bytes)
-        digest_message(si, 16, mac_data + 32 + 16*(i-1));
+        digest_message(si, 16, mac_data + 32 + 32*(i-1));
     }
 
     //copy ctx to mac data

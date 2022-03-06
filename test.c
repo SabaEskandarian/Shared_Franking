@@ -167,7 +167,7 @@ int shared_franking_tests()
     unsigned char* msg = "This is the message for shared franking.";
     int msg_len = strlen(msg);
     uint8_t* write_request_vector;
-    uint8_t* s_hashes = malloc(max_servers*32); //just make things big enough for the bigger test
+    uint8_t* s_hashes = malloc((max_servers-1)*32); //just make things big enough for the bigger test
     int server_output_size = 12 + (msg_len+16+32) + 16 + 32 + (32 + CTX_LEN);
     uint8_t* server_responses = malloc(max_servers*server_output_size);
 
@@ -218,7 +218,7 @@ int shared_franking_tests()
         for(int i = 1; i < num_servers; i++)
         {
             si = write_request_vector + ct_share_len + 16*i;
-            hi = s_hashes + i*32;
+            hi = s_hashes + (i-1)*32;
             server_out = server_responses + i*server_output_size;
 
             if(1 != process(si, ct_share_len, hi, server_out))
@@ -256,7 +256,7 @@ int shared_franking_tests()
         uint8_t* c3_copy = malloc(CTX_LEN+32);
         memcpy(c3_copy, c3, CTX_LEN+32);
 
-        //verify
+        //verify TODO fix so tests pass
         int verifies = verify(mod_key, num_servers, msg_recovered, recovered_len, r, c2, c3, fo);
         if(verifies != 1)
         {
@@ -271,6 +271,7 @@ int shared_franking_tests()
 
         //TODO additional tests where bits are flipped and we expect decryption/verification to fail
 
+        free(c3_copy);
         return 1;
 
     }
