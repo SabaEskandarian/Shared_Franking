@@ -197,10 +197,10 @@ int shared_franking_tests()
 
         //send
         int write_request_vector_len = send(user_key, msg, msg_len, num_servers, &write_request_vector);
-        int expected_write_request_vector_len = 12+(msg_len+16+32)+16+32+16+32*(num_servers-1);
+        int expected_write_request_vector_len = 12+(msg_len+16+32)+16+32+16*num_servers;
         //expecting plaintext to be msg||r||fo
         //then c1 = iv ||ciphertext||tag, c2 = hmac output
-        //then first write request has 16 byte r; other write requests are just (s,r), with |s|=|r|=16 bytes
+        //then first write request has 16 byte s_1; other write requests are just s_i, with |s_i|=16 bytes
 
         if(write_request_vector_len != expected_write_request_vector_len)
         {
@@ -213,27 +213,25 @@ int shared_franking_tests()
         //process
         int ct_share_len = 12 + (msg_len+16+32) + 16 + 32;
         uint8_t* si;
-        uint8_t* ri;
         uint8_t* hi;
         uint8_t* server_out;
         for(int i = 1; i < num_servers; i++)
         {
-            si = write_request_vector + ct_share_len + 16 + (i-1)*32;
-            ri = write_request_vector + ct_share_len + i*32;
+            si = write_request_vector + ct_share_len + 16*i;
             hi = s_hashes + i*32;
             server_out = server_responses + i*server_output_size;
 
-            if(1 != process(si, ri, ct_share_len, hi, server_out))
+            if(1 != process(si, ct_share_len, hi, server_out))
             {
                 printf("couldn't process (server number: %d, total servers: %d)\n", i, num_servers);
                 return 0;
             }
         }
         //moderator needs to process last
-        ri = write_request_vector + ct_share_len;
+        si = write_request_vector + ct_share_len;
         memset(context, 'c', 32);
         server_out = server_responses;
-        if(1 != mod_process(num_servers, mod_key, write_request_vector, ct_share_len, ri, context, s_hashes, server_out))
+        if(1 != mod_process(num_servers, mod_key, write_request_vector, ct_share_len, si, context, s_hashes, server_out))
         {
             printf("moderator couldn't process (total servers: %d)\n", num_servers);
             return 0;
@@ -254,22 +252,24 @@ int shared_franking_tests()
             return 0;
         }
 
-//         //verify TODO
-//         int verifies = verify(mod_key, num_servers, msg_recovered, recovered_len, ctx_recovered, c2, tag, fo, s_vector);
-//         if(verifies != 1)
-//         {
-//             printf("moderator could not verify!\n");
-//             return 0;
-//         }
-//         if(memcmp(context, ctx_recovered, CTX_LEN) != 0)
-//         {
-//             printf("recovered incorrect context!\n");
-//             return 0;
-//         }
-//
-//TODO make a copy of c3 for other tests because verification modifies it
+        //make a copy of c3 for other tests because verification modifies it
+        uint8_t* c3_copy = malloc(CTX_LEN+32);
+        memcpy(c3_copy, c3, CTX_LEN+32);
 
-//         //TODO additional tests where bits are flipped and we expect decryption/verification to fail
+        //verify
+        int verifies = verify(mod_key, num_servers, msg_recovered, recovered_len, r, c2, c3, fo);
+        if(verifies != 1)
+        {
+            printf("moderator could not verify!\n");
+            return 0;
+        }
+        if(memcmp(context, c3, CTX_LEN) != 0)
+        {
+            printf("recovered incorrect context!\n");
+            return 0;
+        }
+
+        //TODO additional tests where bits are flipped and we expect decryption/verification to fail
 
         return 1;
 
