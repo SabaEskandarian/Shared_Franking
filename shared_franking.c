@@ -199,7 +199,7 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
 int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t* r, uint8_t* c2, uint8_t* c3, uint8_t* fo)
 {
 
-    int mac_data_len = 32 + num_servers*32 + CTX_LEN;
+    int mac_data_len = 32 + (num_servers-1)*32 + CTX_LEN;
     uint8_t* mac_data = malloc(mac_data_len); // will hold ([c_2]_1, (H(s_2), ..., H(s_N)), ctx)
 
     int fail = 0;
