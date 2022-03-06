@@ -252,11 +252,7 @@ int shared_franking_tests()
             return 0;
         }
 
-        //make a copy of c3 for other tests because verification modifies it
-        uint8_t* c3_copy = malloc(CTX_LEN+32);
-        memcpy(c3_copy, c3, CTX_LEN+32);
-
-        //verify TODO fix so tests pass
+        //verify
         int verifies = verify(mod_key, num_servers, msg_recovered, recovered_len, r, c2, c3, fo);
         if(verifies != 1)
         {
@@ -269,11 +265,7 @@ int shared_franking_tests()
             return 0;
         }
 
-        //TODO additional tests where bits are flipped and we expect decryption/verification to fail
-
-        free(c3_copy);
         return 1;
-
     }
 
     free(write_request_vector);
