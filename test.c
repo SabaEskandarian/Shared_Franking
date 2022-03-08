@@ -6,8 +6,6 @@
 #include <stdint.h>
 
 #include <openssl/rand.h>
-#include <time.h>
-
 
 int basic_crypto_tests()
 {

@@ -7,7 +7,7 @@ DEPS = crypto_tools.h shared_franking.h
 %.o: %.c $(DEPS)
 		$(CC) -c -o $@ $< $(CFLAGS)
 
-shared_franking: crypto_tools.o shared_franking.o main.o
+shared_franking_eval: crypto_tools.o shared_franking.o main.o
 	$(CC) -o $@ $^ $(CFLAGS) $(LIBS)
 
 test: crypto_tools.o shared_franking.o test.o
