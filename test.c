@@ -25,6 +25,9 @@ int basic_crypto_tests()
         return 0;
     }
 
+    free(seed);
+    free(output);
+
     //printHex(output, 300);
 
     //test HMAC

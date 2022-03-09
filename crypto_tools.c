@@ -222,6 +222,7 @@ int prg(uint8_t* seed, uint8_t* output, int output_len)
     }
 
     free(zeros);
+    EVP_CIPHER_CTX_free(seed_ctx);
 
     return 1;
 }
