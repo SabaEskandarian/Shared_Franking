@@ -1,7 +1,3 @@
-Results from GCP instance in zome us-central1-a machine type e2-small intel Broadwell (Intel(R) Xeon(R) CPU @ 2.20GHz) 2GB RAM, ubuntu 20.04 LTS
-
-(all core turbo frequency is 2.8GHz, which VM likely gets even if base frequency advertised to VM is 2.2GHz, see https://cloud.google.com/compute/docs/cpu-platforms#frequency_behavior)
-
 hello!
 data taken from 1000 iterations for each parameter setting. Times are reported in ns.
 msg_len, num_servers, send_mean, send_stddev, pis_mean, pis_stddev, p1_mean, p1_stddev, read_mean, read_stddev, verify_mean, verify_stddev
