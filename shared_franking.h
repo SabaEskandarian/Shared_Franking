@@ -10,6 +10,8 @@
 #include <openssl/err.h>
 #include <openssl/rand.h>
 
+#include <gmp.h>
+
 #define CTX_LEN 32
 
 int send(uint8_t* user_key, uint8_t* msg, int msg_len, int num_servers, uint8_t** write_request_vector);

@@ -78,14 +78,14 @@ int send(uint8_t* user_key, uint8_t* msg, int msg_len, int num_servers, uint8_t*
         return res_len;
 }
 
-//inputs s,r are 16 bytes each
+//input s is 16 bytes
 //output h is 32 bytes
-//output server_out is ct_share_len + (\ell + |ctx|) = ct_share_len + (32 + CTX_LEN)
+//output server_out is ct_share_len + (\ell + |ctx|) + 2\lambda'' = ct_share_len + (32 + CTX_LEN) + 64
 //return 0 on fail, 1 on success
 int process(uint8_t* s, int ct_share_len, uint8_t* h, uint8_t* server_out)
 {
     //expand s via PRG to get the output share
-    if(1 != prg(s, server_out, ct_share_len + 32 + CTX_LEN))
+    if(1 != prg(s, server_out, ct_share_len + 32 + CTX_LEN + 64))
     {
         printf("error in PRG\n");
         return 0;
@@ -99,7 +99,7 @@ int process(uint8_t* s, int ct_share_len, uint8_t* h, uint8_t* server_out)
 
 //input mod_key has length 16
 //input r has length 16
-//output server_out is ct_share_len + (\ell + |ctx|) = ct_share_len + (32 + CTX_LEN)
+//output server_out is ct_share_len + (\ell + |ctx|) + 2\lambda'' = ct_share_len + (32 + CTX_LEN) + 64
 int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_share_len, uint8_t* s, uint8_t* context, uint8_t* s_hashes, uint8_t* server_out)
 {
     //copy ct to server output
@@ -122,8 +122,8 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
     }
 
     //generate u, mask on latter part of server output, as prg of s
-    uint8_t* mask = malloc(CTX_LEN + 32);
-    if(1 != prg(s, mask, CTX_LEN + 32))
+    uint8_t* mask = malloc(CTX_LEN + 32 + 64);
+    if(1 != prg(s, mask, CTX_LEN + 32 + 64))
     {
         printf("error in PRG\n");
         free(tag_data);
@@ -131,8 +131,11 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
         return 0;
     }
 
+    //TODO: generate k_r, compute \sigma_r, put them in appropriate place in output
+    //TODO add in code to sample k_r, hash relevant stuff and convert gmp number, multiply with k_r to get sigma_r, include k_r,sigma_r in output (32 bytes each)
+
     //xor the mask into (ctx,\sigma)
-    for(int i = 0; i < CTX_LEN + 32; i++)
+    for(int i = 0; i < CTX_LEN + 32 + 64; i++)
     {
         server_out[ct_share_len + i] = server_out[ct_share_len + i] ^ mask[i];
     }
@@ -143,6 +146,7 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
     return 1;
 }
 
+//TODO: Need to recompute sigma_r and check before accepting; involves parsing c_3, so most of that work will happen in read, not verify
 //returns message length
 int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uint8_t* msg, uint8_t* r, uint8_t* c2, uint8_t* c3, uint8_t* fo)
 {
@@ -159,11 +163,11 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
         }
     }
 
-    int c1_len = share_len - (CTX_LEN + 32) - 32 - 16;
+    int c1_len = share_len - (CTX_LEN + 32 + 64) - 32 - 16;
     uint8_t* c1_ct = merged_ct; //c1 is main ciphertext (incl. iv)
     uint8_t* c1_tag = merged_ct + c1_len;
     uint8_t* c2_pointer = merged_ct + c1_len + 16; //c2 is the compactly committing tag
-    uint8_t* c3_pointer = merged_ct + c1_len + 16 + 32; //c3 is masked (ctx,\sigma)
+    uint8_t* c3_pointer = merged_ct + c1_len + 16 + 32; //c3 is masked ctx||\sigma||\sigma_r||k_r
 
     uint8_t* plaintext = malloc(c1_len - 12 - 32);//c1 has iv in front of encrypted plaintext and fo in back
 
@@ -194,6 +198,8 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
     return pt_len - 16;
 }
 
+
+//TODO a lot of the work here will be moved to read
 //NOTE: input c3 becomes output CTX||tag
 //output 1 is accept, 0 is reject
 int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t* r, uint8_t* c2, uint8_t* c3, uint8_t* fo)

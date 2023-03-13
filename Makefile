@@ -1,5 +1,5 @@
 CC=gcc
-LIBS=-lcrypto -lm
+LIBS=-lcrypto -lm -lgmp
 CFLAGS=-I.
 DEPS = crypto_tools.h shared_franking.h
 
@@ -15,4 +15,4 @@ test: crypto_tools.o shared_franking.o test.o
 
 .PHONY: clean
 clean:
-	rm *.o test shared_franking
+	rm *.o test shared_franking_eval
