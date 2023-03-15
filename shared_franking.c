@@ -110,7 +110,7 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
 
     //create the tag \sigma and place it in the appropriate place in the server output
     int tag_data_length = 32 + (num_servers-1)*32 + CTX_LEN; //length of ([c_2]_1, s_hashes, ctx)
-    uint8_t* tag_data = malloc(tag_data_length);
+    uint8_t* tag_data = malloc(tag_data_length+32);//make it longer to hold tag later
     memcpy(tag_data, ct_share + ct_share_len - 32, 32); //copy in [c_2]_1
     memcpy(tag_data + 32, s_hashes, (num_servers-1)*32); //copy in s_hashes
     memcpy(tag_data + tag_data_length - CTX_LEN, context, CTX_LEN); //copy in context
@@ -131,10 +131,49 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
         return 0;
     }
 
-    //TODO: generate k_r, compute \sigma_r, put them in appropriate place in output
-    //TODO add in code to sample k_r, hash relevant stuff and convert gmp number, multiply with k_r to get sigma_r, include k_r,sigma_r in output (32 bytes each)
+    //generate k_r, H_p([c_2]_1, h, ctx, sigma), compute sigma_r
+    mpz_t k_r, Hp_out, sigma_r, modulus;
+    mpz_init2(k_r, 256);
+    mpz_init2(Hp_out, 256);
+    mpz_init2(sigma_r, 512);
+    mpz_init2(modulus, 257);
 
-    //xor the mask into (ctx,\sigma)
+    //generate k_r, which goes at the end of the output
+    uint8_t* k_r_bytes = server_out + ct_share_len + CTX_LEN + 64;
+    if(1 != RAND_priv_bytes(k_r_bytes, 32))
+    {
+        printf("couldn't get randomness!\n");
+        return 0;
+    }
+    //import k_r as a number
+    mpz_import(k_r, 32, 1, sizeof(uint8_t), 0, 0, k_r_bytes);
+
+
+    //copy the tag to the end of the tag data in preparation for computing sigma_r
+    memcpy(tag_data+tag_data_length, server_out + ct_share_len + CTX_LEN, 32);
+
+    uint8_t* Hp_out_bytes = malloc(32);
+    digest_message(tag_data, tag_data_length + 32, Hp_out_bytes);
+    mpz_import(Hp_out, 32, 1, sizeof(uint8_t), 0, 0, Hp_out_bytes);
+
+    //compute sigma_r, mod by 2^256-189 and export to bytes
+    mpz_mul(sigma_r, k_r, Hp_out);
+
+    //set up the modulus
+    mpz_ui_pow_ui(modulus, 2, 256);
+    mpz_sub_ui(modulus, modulus, 189);
+
+    mpz_mod(sigma_r, sigma_r, modulus);
+
+    uint8_t* sigma_r_bytes = server_out + ct_share_len + CTX_LEN + 32;
+
+    //size_t* temp = malloc(4);
+    //mpz_export(sigma_r_bytes, temp, 1, sizeof(uint8_t), 0, 0, sigma_r);
+    mpz_export(sigma_r_bytes, NULL, 1, sizeof(uint8_t), 0, 0, sigma_r);
+
+    //printf("bytes exported: %ld", *temp);
+
+    //xor the mask into (ctx,\sigma,\sigma_r,k_r)
     for(int i = 0; i < CTX_LEN + 32 + 64; i++)
     {
         server_out[ct_share_len + i] = server_out[ct_share_len + i] ^ mask[i];
@@ -142,13 +181,14 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
 
     free(tag_data);
     free(mask);
+    free(Hp_out_bytes);
+    mpz_clears(k_r, Hp_out, sigma_r, modulus, NULL);
 
     return 1;
 }
 
-//TODO: Need to recompute sigma_r and check before accepting; involves parsing c_3, so most of that work will happen in read, not verify
 //returns message length
-int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uint8_t* msg, uint8_t* r, uint8_t* c2, uint8_t* c3, uint8_t* fo)
+int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uint8_t* msg, uint8_t* r, uint8_t* c2_1, uint8_t* ctx, uint8_t* sigma, uint8_t* fo)
 {
     //merge shares
     uint8_t* merged_ct = malloc(share_len);
@@ -186,23 +226,108 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
     memcpy(msg, plaintext, pt_len - 16);
     memcpy(r, plaintext + pt_len - 16, 16);
 
-    //copy c2_pointer to c2 output
-    memcpy(c2, c2_pointer, 32);
+    //space to place inputs to H_p
+    int mac_data_len = 32 + (num_servers-1)*32 + CTX_LEN + 32;
+    uint8_t* mac_data = malloc(mac_data_len);
 
-    //copy c3_pointer to c3 output
-    memcpy(c3, c3_pointer, CTX_LEN + 32);
+    //use PRG on r to get s_i for i\in 1...num_servers
+    int prg_output_len = num_servers*16;
+    uint8_t* prg_outputs = malloc(prg_output_len);
+    if(1 != prg(r, prg_outputs, prg_output_len))
+    {
+        printf("error in PRG\n");
+        free(mac_data);
+        free(prg_outputs);
+        return 0;
+    }
+
+    int mask_len = CTX_LEN + 32 + 64; //length of c3
+    int full_ct_len = share_len - mask_len;
+    uint8_t* share = malloc(full_ct_len+mask_len);
+    uint8_t* si;
+
+    //generate the PRG outputs for each si and xor in appropriate places
+    //this part will:
+    //compute [c_2]_1, put it in the beginning of the mac data
+    //unmask c3 so its contents (CTX||tag||sigma_r||k_r) can be used to verify the mac
+    //also compute the hashes of the s_vector values and put them in mac data after [c_2]_1
+
+    //s1 first because it's a special case
+    si = prg_outputs;
+    if(1 != prg(si, share, mask_len))
+    {
+        printf("error in PRG\n");
+        free(mac_data);
+        free(prg_outputs);
+        free(share);
+        return 0;
+    }
+    for(int j = 0; j < mask_len; j++)
+    {
+        merged_ct[full_ct_len+j] = merged_ct[full_ct_len+j] ^ share[j];
+    }
+
+    //now the others
+    for(int i = 1; i < num_servers; i++)
+    {
+        si = prg_outputs + 16*i;
+
+        //generate PRG output
+        if(1 != prg(si, share, full_ct_len+mask_len))
+        {
+            printf("error in PRG\n");
+            free(mac_data);
+            free(prg_outputs);
+            free(share);
+            return 0;
+        }
+
+        //contributing to recovering [c_2]_1 and unmasking c3
+        //contribute to unmasking c3
+        for(int j = 0; j < 32 + mask_len; j++)
+        {
+            merged_ct[full_ct_len - 32 + j] = merged_ct[full_ct_len - 32 + j] ^ share[full_ct_len-32+j];
+        }
+
+        //set appropriate part of data to (32 bytes) to be hash of s_i (16 bytes)
+        digest_message(si, 16, mac_data + 32 + 32*(i-1));
+    }
+
+    //copy [c_2]_1 into place for MAC and output
+    memcpy(mac_data, merged_ct + full_ct_len - 32, 32);
+    memcpy(c2_1, merged_ct + full_ct_len - 32, 32);
+
+    //copy ctx into place for MAC and output
+    memcpy(mac_data + mac_data_len - 32 - CTX_LEN, merged_ct + full_ct_len, CTX_LEN);
+    memcpy(ctx, merged_ct + full_ct_len, CTX_LEN);
+
+    //copy sigma into place for MAC and output
+    memcpy(mac_data + mac_data_len - 32, merged_ct + full_ct_len + CTX_LEN, 32);
+    memcpy(sigma, merged_ct + full_ct_len + CTX_LEN, 32);
+
+    //hash the one time mac data
+    uint8_t* Hp_out = malloc(32);
+    digest_message(mac_data, mac_data_len, Hp_out);
+
+    //TODO check the one-time MAC
+    // sigma_r is located at merged_ct + full_ct_len + CTX_LEN + 32, has length 32
+    // k_r is located at merged_ct + full_ct_len + CTX_LEN + 64, has length 32
+    //interpret Hp_out, k_r and sigma_r and integers mod 2^256-something
+    //check that sigma_r = k_r * Hp_out
 
     free(merged_ct);
     free(plaintext);
+    free(prg_outputs);
+    free(mac_data);
+    free(share);
+    free(Hp_out);
 
     return pt_len - 16;
 }
 
 
-//TODO a lot of the work here will be moved to read
-//NOTE: input c3 becomes output CTX||tag
 //output 1 is accept, 0 is reject
-int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t* r, uint8_t* c2, uint8_t* c3, uint8_t* fo)
+int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t* r, uint8_t* c2_1, uint8_t* ctx, uint8_t* sigma, uint8_t* fo)
 {
 
     int mac_data_len = 32 + (num_servers-1)*32 + CTX_LEN;
@@ -222,39 +347,43 @@ int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t
         return 0;
     }
 
-    int mask_len = CTX_LEN + 32;
-    int full_ct_len = 12 + (msg_len + 16 + 32) + 16 + 32; //size of (c1, c2) includes iv, msg, c1_tag, c2
-    uint8_t* share = malloc(full_ct_len+mask_len);
+    //construct h and put hashes in place for MAC verification
     uint8_t* si;
 
-    //generate the PRG outputs for each si and xor in appropriate places
-    //this part will:
-    //compute [c_2]_1, put it in the beginning of the mac data
-    //unmask c3 so its contents (CTX||tag) can be used to verify the mac
-    //also compute the hashes of the s_vector values and put them in mac data after [c_2]_1
-    memcpy(mac_data, c2, 32);
+    for(int i = 1; i < num_servers; i++)
+    {
+        si = prg_outputs + 16*i;
 
-    //s1 first because it's a special case
-    si = prg_outputs;
-    if(1 != prg(si, share, mask_len))
-    {
-        printf("error in PRG\n");
-        free(mac_data);
-        free(prg_outputs);
-        free(share);
-        return 0;
+        //set appropriate part of data to (32 bytes) to be hash of s_i (16 bytes)
+        digest_message(si, 16, mac_data + 32 + 32*(i-1));
     }
-    for(int j = 0; j < mask_len; j++)
+
+    //copy c2_1 to mac data
+    memcpy(mac_data, c2_1, 32);
+
+    //copy ctx to mac data
+    memcpy(mac_data + mac_data_len - CTX_LEN, ctx, CTX_LEN);
+
+    if(1 != verify_hmac(mod_key, mac_data, mac_data_len, sigma))
     {
-        c3[j] = c3[j] ^ share[j];
+        fail = 1;
+        printf("failed hmac verification\n");
     }
+
+    int full_ct_len = 12 + (msg_len + 16 + 32) + 16 + 32; //size of (c1, c2) includes iv, msg, c1_tag, c2
+    uint8_t* share = malloc(full_ct_len);
+
+    //generate the PRG outputs for each si and xor in appropriate places
+    //this part will recompute c_2 so it can be used for ccAE verification.
+
+    uint8_t* c2 = mac_data; //c_2 will be at the beginning of mac_data
 
     for(int i = 1; i < num_servers; i++)
     {
         si = prg_outputs + 16*i;
 
         //generate PRG output
-        if(1 != prg(si, share, full_ct_len+mask_len))
+        if(1 != prg(si, share, full_ct_len))
         {
             printf("error in PRG\n");
             free(mac_data);
@@ -263,30 +392,12 @@ int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t
             return 0;
         }
 
-        //contribute to recovering [c_2]_1
+        //contribute to recovering c_2
         for(int j = 0; j < 32; j++)
         {
             //only need the last 32 bytes of the ct mask
-            mac_data[j] = mac_data[j] ^ share[full_ct_len - 32 + j];
+            c2[j] = c2[j] ^ share[full_ct_len - 32 + j];
         }
-
-        //contribute to unmasking c3
-        for(int j = 0; j < mask_len; j++)
-        {
-            c3[j] = c3[j] ^ share[full_ct_len+j];
-        }
-
-        //set appropriate part of data to (32 bytes) to be hash of s_i (16 bytes)
-        digest_message(si, 16, mac_data + 32 + 32*(i-1));
-    }
-
-    //copy ctx to mac data
-    memcpy(mac_data + mac_data_len - CTX_LEN, c3, CTX_LEN);
-
-    if(1 != verify_hmac(mod_key, mac_data, mac_data_len, c3 + CTX_LEN))
-    {
-        fail = 1;
-        printf("failed hmac verification\n");
     }
 
     //message for ccAE verification is msg||r

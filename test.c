@@ -169,13 +169,14 @@ int shared_franking_tests()
     int msg_len = strlen(msg);
     uint8_t* write_request_vector;
     uint8_t* s_hashes = malloc((max_servers-1)*32); //just make things big enough for the bigger test
-    int server_output_size = 12 + (msg_len+16+32) + 16 + 32 + (32 + CTX_LEN);
+    int server_output_size = 12 + (msg_len+16+32) + 16 + 32 + (32 + CTX_LEN + 64);
     uint8_t* server_responses = malloc(max_servers*server_output_size);
 
     uint8_t* msg_recovered = malloc(msg_len);
     uint8_t* context = malloc(CTX_LEN);
-    uint8_t* c2 = malloc(32);
-    uint8_t* c3 = malloc(CTX_LEN + 32);
+    uint8_t* c2_1 = malloc(32);
+    uint8_t* ctx = malloc(CTX_LEN);
+    uint8_t* sigma = malloc(32);
     uint8_t* fo = malloc(32);
     uint8_t* r = malloc(16);
 
@@ -239,8 +240,8 @@ int shared_franking_tests()
         }
 
         //read
-        int share_len = ct_share_len + CTX_LEN + 32;
-        int recovered_len = read(user_key, num_servers, server_responses, share_len, msg_recovered, r, c2, c3, fo);
+        int share_len = ct_share_len + CTX_LEN + 32 + 64;
+        int recovered_len = read(user_key, num_servers, server_responses, share_len, msg_recovered, r, c2_1, ctx, sigma, fo);
         if(recovered_len != msg_len)
         {
             printf("recovered message incorrect length\n");
@@ -254,13 +255,13 @@ int shared_franking_tests()
         }
 
         //verify
-        int verifies = verify(mod_key, num_servers, msg_recovered, recovered_len, r, c2, c3, fo);
+        int verifies = verify(mod_key, num_servers, msg_recovered, recovered_len, r, c2_1, ctx, sigma, fo);
         if(verifies != 1)
         {
             printf("moderator could not verify!\n");
             return 0;
         }
-        if(memcmp(context, c3, CTX_LEN) != 0)
+        if(memcmp(context, ctx, CTX_LEN) != 0)
         {
             printf("recovered incorrect context!\n");
             return 0;
@@ -274,8 +275,9 @@ int shared_franking_tests()
     free(server_responses);
     free(msg_recovered);
     free(context);
-    free(c2);
-    free(c3);
+    free(c2_1);
+    free(ctx);
+    free(sigma);
     free(fo);
     free(r);
     free(mod_key);
