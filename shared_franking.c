@@ -146,7 +146,7 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
         return 0;
     }
     //import k_r as a number
-    mpz_import(k_r, 32, 1, sizeof(uint8_t), 0, 0, k_r_bytes);
+    mpz_import(k_r, 32, -1, sizeof(uint8_t), 0, 0, k_r_bytes);
 
 
     //copy the tag to the end of the tag data in preparation for computing sigma_r
@@ -154,7 +154,7 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
 
     uint8_t* Hp_out_bytes = malloc(32);
     digest_message(tag_data, tag_data_length + 32, Hp_out_bytes);
-    mpz_import(Hp_out, 32, 1, sizeof(uint8_t), 0, 0, Hp_out_bytes);
+    mpz_import(Hp_out, 32, -1, sizeof(uint8_t), 0, 0, Hp_out_bytes);
 
     //compute sigma_r, mod by 2^256-189 and export to bytes
     mpz_mul(sigma_r, k_r, Hp_out);
@@ -167,9 +167,13 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
 
     uint8_t* sigma_r_bytes = server_out + ct_share_len + CTX_LEN + 32;
 
+
+    //zero out the bytes to be exported onto in case what is written comes up short
+    memset(sigma_r_bytes, 0, 32);
+
     //size_t* temp = malloc(4);
-    //mpz_export(sigma_r_bytes, temp, 1, sizeof(uint8_t), 0, 0, sigma_r);
-    mpz_export(sigma_r_bytes, NULL, 1, sizeof(uint8_t), 0, 0, sigma_r);
+    //mpz_export(sigma_r_bytes, temp, -1, sizeof(uint8_t), 0, 0, sigma_r);
+    mpz_export(sigma_r_bytes, NULL, -1, sizeof(uint8_t), 0, 0, sigma_r);
 
     //printf("bytes exported: %ld", *temp);
 
@@ -207,7 +211,6 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
     uint8_t* c1_ct = merged_ct; //c1 is main ciphertext (incl. iv)
     uint8_t* c1_tag = merged_ct + c1_len;
     uint8_t* c2_pointer = merged_ct + c1_len + 16; //c2 is the compactly committing tag
-    uint8_t* c3_pointer = merged_ct + c1_len + 16 + 32; //c3 is masked ctx||\sigma||\sigma_r||k_r
 
     uint8_t* plaintext = malloc(c1_len - 12 - 32);//c1 has iv in front of encrypted plaintext and fo in back
 
@@ -306,21 +309,53 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
     memcpy(sigma, merged_ct + full_ct_len + CTX_LEN, 32);
 
     //hash the one time mac data
-    uint8_t* Hp_out = malloc(32);
-    digest_message(mac_data, mac_data_len, Hp_out);
+    uint8_t* Hp_out_bytes = malloc(32);
+    digest_message(mac_data, mac_data_len, Hp_out_bytes);
 
-    //TODO check the one-time MAC
-    // sigma_r is located at merged_ct + full_ct_len + CTX_LEN + 32, has length 32
-    // k_r is located at merged_ct + full_ct_len + CTX_LEN + 64, has length 32
-    //interpret Hp_out, k_r and sigma_r and integers mod 2^256-something
     //check that sigma_r = k_r * Hp_out
+    mpz_t k_r, Hp_out, sigma_r, sigma_r_computed, modulus;
+    mpz_init2(k_r, 256);
+    mpz_init2(Hp_out, 256);
+    mpz_init2(sigma_r, 256);
+    mpz_init2(sigma_r_computed, 512);
+    mpz_init2(modulus, 257);
+
+    uint8_t* sigma_r_bytes = merged_ct + full_ct_len + CTX_LEN + 32;
+    uint8_t* k_r_bytes = merged_ct + full_ct_len + CTX_LEN + 64;
+
+    mpz_import(k_r, 32, -1, sizeof(uint8_t), 0, 0, k_r_bytes);
+    mpz_import(sigma_r, 32, -1, sizeof(uint8_t), 0, 0, sigma_r_bytes);
+    mpz_import(Hp_out, 32, -1, sizeof(uint8_t), 0, 0, Hp_out_bytes);
+
+
+    //set up the modulus
+    mpz_ui_pow_ui(modulus, 2, 256);
+    mpz_sub_ui(modulus, modulus, 189);
+
+    //recompute tag sigma_r
+    mpz_mul(sigma_r_computed, k_r, Hp_out);
+    mpz_mod(sigma_r_computed, sigma_r_computed, modulus);
+
+    if(mpz_cmp(sigma_r, sigma_r_computed) != 0)
+    {
+        printf("failed tag verification!\n");
+        free(merged_ct);
+        free(plaintext);
+        free(prg_outputs);
+        free(mac_data);
+        free(share);
+        free(Hp_out_bytes);
+        mpz_clears(k_r, Hp_out, sigma_r, sigma_r_computed, modulus, NULL);
+        return 0;
+    }
 
     free(merged_ct);
     free(plaintext);
     free(prg_outputs);
     free(mac_data);
     free(share);
-    free(Hp_out);
+    free(Hp_out_bytes);
+    mpz_clears(k_r, Hp_out, sigma_r, sigma_r_computed, modulus, NULL);
 
     return pt_len - 16;
 }

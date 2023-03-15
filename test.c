@@ -239,6 +239,9 @@ int shared_franking_tests()
             return 0;
         }
 
+        //this should make it fail
+        //server_responses[2*server_output_size-70] = server_responses[2*server_output_size-70] ^ 0xff;
+
         //read
         int share_len = ct_share_len + CTX_LEN + 32 + 64;
         int recovered_len = read(user_key, num_servers, server_responses, share_len, msg_recovered, r, c2_1, ctx, sigma, fo);
