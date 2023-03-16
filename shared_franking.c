@@ -97,7 +97,7 @@ int process(uint8_t* s, int ct_share_len, uint8_t* h, uint8_t* server_out)
     return 1;
 }
 
-//input mod_key has length 16
+//input mod_key has length 32
 //input r has length 16
 //output server_out is ct_share_len + (\ell + |ctx|) + 2\lambda'' = ct_share_len + (32 + CTX_LEN) + 64
 int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_share_len, uint8_t* s, uint8_t* context, uint8_t* s_hashes, uint8_t* server_out)

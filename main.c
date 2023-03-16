@@ -47,7 +47,7 @@ void print_stats(unsigned long times[], int times_len)
 
 int main()
 {
-    printf("hello!\n");
+    printf("hello! These are the shared franking evaluation results.\n");
 
 
     //test shared franking
@@ -95,7 +95,7 @@ int main()
                 uint8_t* r = malloc(16);
 
                 uint8_t* user_key = malloc(16);
-                uint8_t* mod_key = malloc(16);
+                uint8_t* mod_key = malloc(32);
 
                 int flag = 0;
 
@@ -105,7 +105,7 @@ int main()
                     printf("couldn't get randomness!\n");
                     return 1;
                 }
-                if(1 != RAND_priv_bytes(mod_key, 16))
+                if(1 != RAND_priv_bytes(mod_key, 32))
                 {
                     printf("couldn't get randomness!\n");
                     return 1;
