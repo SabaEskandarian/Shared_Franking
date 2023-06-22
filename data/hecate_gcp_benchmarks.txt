@@ -1,0 +1,45 @@
+
+Hecate Benchmarks on GCP
+
+I had to make some changes to the criterion tests to match the performance reported by AWS because sometimes the results would just be 5x worse for no clear reason. I was able to get results in the right ballpark by running the tests one at a time rather than all at once. Here are the best results I was able to get. 
+
+As a reminder, /proc/cpuinfo says the two cores are   Intel(R) Xeon(R) CPU @ 2.20GHz. 
+There is 2GB RAM, but this was more than necessary for these tests. 
+
+Sender/Frank :: B/1000  time:   [36.917 us 37.003 us 37.091 us]                                   
+                        change: [-0.9209% -0.3497% +0.2785%] (p = 0.25 > 0.05)
+                        No change in performance detected.
+Found 2 outliers among 100 measurements (2.00%)
+  1 (1.00%) high mild
+  1 (1.00%) high severe
+  
+  
+Receiver/Verify :: B/1000                                                                           
+                        time:   [222.76 us 223.50 us 224.32 us]
+                        change: [-2.8887% -1.8543% -0.9267%] (p = 0.00 < 0.05)
+                        Change within noise threshold.
+                        
+                        
+Platform/Sign and Timestamp                                                                             
+                        time:   [32.980 us 33.090 us 33.210 us]
+                        change: [-79.704% -74.902% -68.667%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 9 outliers among 100 measurements (9.00%)
+  7 (7.00%) high mild
+  2 (2.00%) high severe
+                        
+                        
+Moderator/Inspect and Trace :: B/1000                                                                           
+                        time:   [226.68 us 227.29 us 227.96 us]
+                        change: [-83.994% -76.326% -62.289%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 2 outliers among 50 measurements (4.00%)
+  2 (4.00%) high mild
+
+Moderator/Generate Tokens :: /1                                                                           
+                        time:   [62.335 us 62.656 us 63.061 us]
+                        change: [-81.377% -73.264% -57.749%] (p = 0.00 < 0.05)
+                        Performance has improved.
+Found 5 outliers among 50 measurements (10.00%)
+  2 (4.00%) high mild
+  3 (6.00%) high severe
