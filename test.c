@@ -181,7 +181,7 @@ int shared_franking_tests()
     uint8_t* r = malloc(16);
 
     uint8_t* user_key = malloc(16);
-    uint8_t* mod_key = malloc(16);
+    uint8_t* mod_key = malloc(32);
 
     for(int num_servers = 2; num_servers < max_servers; num_servers++)
     {
@@ -191,7 +191,7 @@ int shared_franking_tests()
             printf("couldn't get randomness!\n");
             return 0;
         }
-        if(1 != RAND_priv_bytes(mod_key, 16))
+        if(1 != RAND_priv_bytes(mod_key, 32))
         {
             printf("couldn't get randomness!\n");
             return 0;
@@ -269,11 +269,10 @@ int shared_franking_tests()
             printf("recovered incorrect context!\n");
             return 0;
         }
-
-        return 1;
+        
+        free(write_request_vector);
     }
 
-    free(write_request_vector);
     free(s_hashes);
     free(server_responses);
     free(msg_recovered);
@@ -285,6 +284,8 @@ int shared_franking_tests()
     free(r);
     free(mod_key);
     free(user_key);
+    
+    return 1;
 }
 
 

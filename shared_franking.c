@@ -454,6 +454,7 @@ int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t
     free(mac_data);
     free(share);
     free(cc_msg);
+    free(prg_outputs);
 
     return result;
 }
