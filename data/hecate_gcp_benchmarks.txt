@@ -3,7 +3,7 @@ Hecate Benchmarks on GCP
 
 I had to make some changes to the criterion tests to match the performance reported by AWS because sometimes the results would just be 5x worse for no clear reason. I was able to get results in the right ballpark by running the tests one at a time rather than all at once. Here are the best results I was able to get. 
 
-As a reminder, /proc/cpuinfo says the two cores are   Intel(R) Xeon(R) CPU @ 2.20GHz. 
+As a reminder, /proc/cpuinfo says the two cores are   Intel(R) Xeon(R) CPU @ 2.20GHz. This is an e2-small instance.
 There is 2GB RAM, but this was more than necessary for these tests. 
 
 Sender/Frank :: B/1000  time:   [36.917 us 37.003 us 37.091 us]                                   
