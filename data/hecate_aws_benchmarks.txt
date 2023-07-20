@@ -1,333 +1,126 @@
-Sender/Frank :: B/10    time:   [31.105 us 31.114 us 31.122 us]                                  
-Found 35 outliers among 300 measurements (11.67%)
-  11 (3.67%) low severe
-  18 (6.00%) low mild
-  3 (1.00%) high mild
-  3 (1.00%) high severe
-Sender/Frank :: B/100   time:   [31.589 us 31.606 us 31.626 us]                                   
-Found 17 outliers among 300 measurements (5.67%)
-  1 (0.33%) low severe
-  2 (0.67%) low mild
-  9 (3.00%) high mild
-  5 (1.67%) high severe
-Sender/Frank :: B/250   time:   [32.660 us 32.673 us 32.687 us]                                   
-Found 15 outliers among 300 measurements (5.00%)
-  1 (0.33%) low severe
-  8 (2.67%) low mild
-  4 (1.33%) high mild
-  2 (0.67%) high severe
-Sender/Frank :: B/500   time:   [33.735 us 33.756 us 33.783 us]                                   
-Found 19 outliers among 300 measurements (6.33%)
-  5 (1.67%) low mild
-  11 (3.67%) high mild
-  3 (1.00%) high severe
-Sender/Frank :: B/750   time:   [35.315 us 35.621 us 35.989 us]                                   
-Found 24 outliers among 300 measurements (8.00%)
-  2 (0.67%) low severe
-  7 (2.33%) low mild
-  5 (1.67%) high mild
-  10 (3.33%) high severe
-Sender/Frank :: B/1000  time:   [36.560 us 36.569 us 36.578 us]                                    
-Found 8 outliers among 300 measurements (2.67%)
-  2 (0.67%) low mild
-  1 (0.33%) high mild
-  5 (1.67%) high severe
-Sender/Frank :: B/2500  time:   [46.335 us 47.159 us 48.143 us]                                    
-Found 63 outliers among 300 measurements (21.00%)
-  1 (0.33%) low severe
-  2 (0.67%) low mild
-  2 (0.67%) high mild
-  58 (19.33%) high severe
-Sender/Frank :: B/5000  time:   [61.126 us 62.342 us 63.874 us]                                    
-Found 28 outliers among 300 measurements (9.33%)
-  14 (4.67%) high mild
-  14 (4.67%) high severe
-Sender/Frank :: B/7500  time:   [72.496 us 72.950 us 73.512 us]                                    
-Found 38 outliers among 300 measurements (12.67%)
-  1 (0.33%) low mild
-  2 (0.67%) high mild
-  35 (11.67%) high severe
-Sender/Frank :: B/8000  time:   [74.729 us 74.766 us 74.808 us]                                    
-Found 29 outliers among 300 measurements (9.67%)
-  2 (0.67%) low mild
-  7 (2.33%) high mild
-  20 (6.67%) high severe
-Sender/Frank :: B/9000  time:   [80.806 us 82.185 us 83.901 us]                                    
-Found 28 outliers among 300 measurements (9.33%)
-  10 (3.33%) high mild
-  18 (6.00%) high severe
-Sender/Frank :: B/10000 time:   [100.83 us 104.27 us 108.09 us]                                     
-Found 32 outliers among 300 measurements (10.67%)
-  7 (2.33%) high mild
-  25 (8.33%) high severe
-
-Receiver/Verify :: B/10 time:   [218.57 us 225.06 us 232.31 us]                                    
-Found 42 outliers among 300 measurements (14.00%)
-  10 (3.33%) high mild
-  32 (10.67%) high severe
-Receiver/Verify :: B/100                                                                            
-                        time:   [194.14 us 195.60 us 197.62 us]
-Found 22 outliers among 300 measurements (7.33%)
-  6 (2.00%) high mild
-  16 (5.33%) high severe
-Receiver/Verify :: B/250                                                                            
-                        time:   [193.87 us 194.85 us 196.11 us]
-Found 57 outliers among 300 measurements (19.00%)
-  1 (0.33%) high mild
-  56 (18.67%) high severe
-Receiver/Verify :: B/500                                                                            
-                        time:   [195.36 us 196.29 us 197.50 us]
-Found 63 outliers among 300 measurements (21.00%)
-  3 (1.00%) high mild
-  60 (20.00%) high severe
-Receiver/Verify :: B/750                                                                            
-                        time:   [195.43 us 195.53 us 195.63 us]
-Found 28 outliers among 300 measurements (9.33%)
-  7 (2.33%) low severe
-  9 (3.00%) low mild
-  4 (1.33%) high mild
-  8 (2.67%) high severe
-Receiver/Verify :: B/1000                                                                            
-                        time:   [195.87 us 195.96 us 196.05 us]
-Found 6 outliers among 300 measurements (2.00%)
-  1 (0.33%) low severe
-  1 (0.33%) low mild
-  2 (0.67%) high mild
-  2 (0.67%) high severe
-Receiver/Verify :: B/2500                                                                            
-                        time:   [204.71 us 204.81 us 204.90 us]
-Found 2 outliers among 300 measurements (0.67%)
-  1 (0.33%) high mild
-  1 (0.33%) high severe
-Receiver/Verify :: B/5000                                                                            
-                        time:   [217.12 us 217.23 us 217.33 us]
+Sender/Frank :: B/10    time:   [40.339 us 41.459 us 42.633 us]                                  
 Found 16 outliers among 300 measurements (5.33%)
-  2 (0.67%) low severe
-  6 (2.00%) low mild
-  4 (1.33%) high mild
-  4 (1.33%) high severe
-Receiver/Verify :: B/7500                                                                            
-                        time:   [230.93 us 231.05 us 231.17 us]
-Found 3 outliers among 300 measurements (1.00%)
-  1 (0.33%) low mild
-  2 (0.67%) high severe
-Receiver/Verify :: B/8000                                                                            
-                        time:   [233.60 us 233.77 us 233.94 us]
-Found 3 outliers among 300 measurements (1.00%)
+  13 (4.33%) high mild
   3 (1.00%) high severe
-Receiver/Verify :: B/9000                                                                            
-                        time:   [238.89 us 239.03 us 239.17 us]
+Sender/Frank :: B/100   time:   [41.264 us 42.193 us 43.189 us]                                   
 Found 18 outliers among 300 measurements (6.00%)
-  15 (5.00%) low mild
-  1 (0.33%) high mild
+  13 (4.33%) high mild
+  5 (1.67%) high severe
+Sender/Frank :: B/250   time:   [41.680 us 42.861 us 44.060 us]                                   
+Found 13 outliers among 300 measurements (4.33%)
+  13 (4.33%) high mild
+Sender/Frank :: B/500   time:   [43.388 us 44.362 us 45.424 us]                                   
+Found 22 outliers among 300 measurements (7.33%)
+  14 (4.67%) high mild
+  8 (2.67%) high severe
+Sender/Frank :: B/750   time:   [46.748 us 48.123 us 49.557 us]                                   
+Found 18 outliers among 300 measurements (6.00%)
+  13 (4.33%) high mild
+  5 (1.67%) high severe
+Benchmarking Sender/Frank :: B/1000: Collecting 300 samples in estimated 15.151 s (316k iterations                                                                                                  Sender/Frank :: B/1000  time:   [48.294 us 49.759 us 51.296 us]
+Found 19 outliers among 300 measurements (6.33%)
+  16 (5.33%) high mild
+  3 (1.00%) high severe
+
+Benchmarking Receiver/Verify :: B/10: Collecting 300 samples in estimated 23.552 s (90k iterations                                                                                                  Receiver/Verify :: B/10 time:   [235.03 us 240.14 us 245.49 us]
+Found 25 outliers among 300 measurements (8.33%)
+  14 (4.67%) high mild
+  11 (3.67%) high severe
+Benchmarking Receiver/Verify :: B/100: Collecting 300 samples in estimated 22.271 s (90k iteration                                                                                                  Receiver/Verify :: B/100                        
+                        time:   [244.22 us 251.61 us 259.26 us]
+Found 5 outliers among 300 measurements (1.67%)
+  4 (1.33%) high mild
+  1 (0.33%) high severe
+Benchmarking Receiver/Verify :: B/250: Collecting 300 samples in estimated 21.040 s (90k iteration                                                                                                  Receiver/Verify :: B/250                        
+                        time:   [248.87 us 254.55 us 260.41 us]
+Found 8 outliers among 300 measurements (2.67%)
+  7 (2.33%) high mild
+  1 (0.33%) high severe
+Benchmarking Receiver/Verify :: B/500: Collecting 300 samples in estimated 22.704 s (90k iteration                                                                                                  Receiver/Verify :: B/500                        
+                        time:   [246.88 us 253.14 us 259.72 us]
+Found 19 outliers among 300 measurements (6.33%)
+  18 (6.00%) high mild
+  1 (0.33%) high severe
+Benchmarking Receiver/Verify :: B/750: Collecting 300 samples in estimated 21.921 s (90k iteration                                                                                                  Receiver/Verify :: B/750                        
+                        time:   [242.61 us 248.77 us 255.14 us]
+Found 17 outliers among 300 measurements (5.67%)
+  15 (5.00%) high mild
   2 (0.67%) high severe
-Receiver/Verify :: B/10000                                                                            
-                        time:   [246.10 us 246.51 us 247.01 us]
-Found 30 outliers among 300 measurements (10.00%)
-  1 (0.33%) low severe
-  16 (5.33%) low mild
+Benchmarking Receiver/Verify :: B/1000: Collecting 300 samples in estimated 23.847 s (90k iteratio                                                                                                  Receiver/Verify :: B/1000                        
+                        time:   [246.26 us 251.81 us 257.64 us]
+Found 14 outliers among 300 measurements (4.67%)
+  12 (4.00%) high mild
+  2 (0.67%) high severe
+
+Benchmarking Forwarder/Forward :: B/10: Collecting 300 samples in estimated 5.0268 s (4.3M iterati                                                                                                  Forwarder/Forward :: B/10                        
+                        time:   [1.2467 us 1.2867 us 1.3287 us]
+Found 14 outliers among 300 measurements (4.67%)
+  14 (4.67%) high mild
+Benchmarking Forwarder/Forward :: B/100: Collecting 300 samples in estimated 5.0573 s (3.9M iterat                                                                                                  Forwarder/Forward :: B/100                        
+                        time:   [1.2994 us 1.3359 us 1.3757 us]
+Found 22 outliers among 300 measurements (7.33%)
+  18 (6.00%) high mild
+  4 (1.33%) high severe
+Benchmarking Forwarder/Forward :: B/250: Collecting 300 samples in estimated 5.0487 s (4.5M iterat                                                                                                  Forwarder/Forward :: B/250                        
+                        time:   [1.1843 us 1.2212 us 1.2606 us]
+Found 33 outliers among 300 measurements (11.00%)
+  19 (6.33%) high mild
+  14 (4.67%) high severe
+Benchmarking Forwarder/Forward :: B/500: Collecting 300 samples in estimated 5.0148 s (4.2M iterat                                                                                                  Forwarder/Forward :: B/500                        
+                        time:   [1.2235 us 1.2619 us 1.3041 us]
+Found 24 outliers among 300 measurements (8.00%)
+  14 (4.67%) high mild
+  10 (3.33%) high severe
+Benchmarking Forwarder/Forward :: B/750: Collecting 300 samples in estimated 5.0155 s (3.8M iterat                                                                                                  Forwarder/Forward :: B/750                        
+                        time:   [1.2449 us 1.3009 us 1.3651 us]
+Found 32 outliers among 300 measurements (10.67%)
+  17 (5.67%) high mild
+  15 (5.00%) high severe
+Benchmarking Forwarder/Forward :: B/1000: Collecting 300 samples in estimated 5.0407 s (3.7M itera                                                                                                  Forwarder/Forward :: B/1000                        
+                        time:   [1.1223 us 1.1466 us 1.1753 us]
+Found 21 outliers among 300 measurements (7.00%)
+  8 (2.67%) high mild
   13 (4.33%) high severe
 
-Forwarder/Forward :: B/10                                                                             
-                        time:   [995.68 ns 996.16 ns 996.64 ns]
-Found 24 outliers among 300 measurements (8.00%)
-  4 (1.33%) low severe
-  11 (3.67%) low mild
-  6 (2.00%) high mild
-  3 (1.00%) high severe
-Forwarder/Forward :: B/100                                                                             
-                        time:   [1.0101 us 1.0109 us 1.0116 us]
-Found 14 outliers among 300 measurements (4.67%)
-  8 (2.67%) low mild
-  3 (1.00%) high mild
-  3 (1.00%) high severe
-Forwarder/Forward :: B/250                                                                             
-                        time:   [991.54 ns 992.29 ns 993.01 ns]
-Found 11 outliers among 300 measurements (3.67%)
-  2 (0.67%) low severe
-  3 (1.00%) low mild
-  4 (1.33%) high mild
-  2 (0.67%) high severe
-Forwarder/Forward :: B/500                                                                             
-                        time:   [999.76 ns 1.0005 us 1.0013 us]
-Found 11 outliers among 300 measurements (3.67%)
-  4 (1.33%) low mild
-  2 (0.67%) high mild
-  5 (1.67%) high severe
-Forwarder/Forward :: B/750                                                                             
-                        time:   [1.0011 us 1.0025 us 1.0047 us]
-Found 16 outliers among 300 measurements (5.33%)
-  8 (2.67%) low mild
-  6 (2.00%) high mild
-  2 (0.67%) high severe
-Forwarder/Forward :: B/1000                                                                             
-                        time:   [1.0066 us 1.0074 us 1.0082 us]
-Found 11 outliers among 300 measurements (3.67%)
-  1 (0.33%) low severe
-  6 (2.00%) low mild
-  3 (1.00%) high mild
-  1 (0.33%) high severe
-Forwarder/Forward :: B/2500                                                                             
-                        time:   [1.2187 us 1.2197 us 1.2207 us]
-Found 9 outliers among 300 measurements (3.00%)
-  4 (1.33%) low mild
-  3 (1.00%) high mild
-  2 (0.67%) high severe
-Forwarder/Forward :: B/5000                                                                             
-                        time:   [1.1736 us 1.1746 us 1.1756 us]
-Found 9 outliers among 300 measurements (3.00%)
-  4 (1.33%) low mild
-  2 (0.67%) high mild
-  3 (1.00%) high severe
-Forwarder/Forward :: B/7500                                                                             
-                        time:   [1.2017 us 1.2027 us 1.2037 us]
-Found 10 outliers among 300 measurements (3.33%)
-  4 (1.33%) low mild
-  1 (0.33%) high mild
-  5 (1.67%) high severe
-Forwarder/Forward :: B/8000                                                                             
-                        time:   [1.2366 us 1.2376 us 1.2387 us]
-Found 6 outliers among 300 measurements (2.00%)
-  1 (0.33%) low mild
-  2 (0.67%) high mild
-  3 (1.00%) high severe
-Forwarder/Forward :: B/9000                                                                             
-                        time:   [1.2008 us 1.2019 us 1.2030 us]
-Found 13 outliers among 300 measurements (4.33%)
-  4 (1.33%) low severe
-  4 (1.33%) low mild
-  4 (1.33%) high mild
-  1 (0.33%) high severe
-Forwarder/Forward :: B/10000                                                                             
-                        time:   [1.3012 us 1.3026 us 1.3039 us]
-Found 9 outliers among 300 measurements (3.00%)
-  4 (1.33%) low mild
-  3 (1.00%) high mild
-  2 (0.67%) high severe
+Benchmarking Platform/Sign and Timestamp : Collecting 300 samples in estimated 16.186 s (452k iter                                                                                                  Platform/Sign and Timestamp                         
+                        time:   [33.308 us 34.345 us 35.460 us]
+Found 18 outliers among 300 measurements (6.00%)
+  14 (4.67%) high mild
+  4 (1.33%) high severe
 
-Platform/Sign and Timestamp                                                                              
-                        time:   [32.348 us 32.368 us 32.389 us]
-Found 5 outliers among 300 measurements (1.67%)
-  4 (1.33%) high mild
-  1 (0.33%) high severe
-
-Benchmarking Moderator/Inspect and Trace :: B/10: Collecting 300 samples in estimated 17.712 s (90k itera                                                                                                         Moderator/Inspect and Trace :: B/10                        
-                        time:   [195.95 us 196.06 us 196.17 us]
-Found 14 outliers among 300 measurements (4.67%)
-  2 (0.67%) low severe
-  10 (3.33%) low mild
+Benchmarking Moderator/Inspect and Trace :: B/10: Collecting 300 samples in estimated 22.930 s (90                                                                                                  Moderator/Inspect and Trace :: B/10                        
+                        time:   [245.02 us 250.07 us 255.25 us]
+Found 11 outliers among 300 measurements (3.67%)
+  9 (3.00%) high mild
   2 (0.67%) high severe
-Benchmarking Moderator/Inspect and Trace :: B/100: Collecting 300 samples in estimated 17.965 s (90k iter                                                                                                         Moderator/Inspect and Trace :: B/100                        
-                        time:   [198.68 us 198.74 us 198.79 us]
+Benchmarking Moderator/Inspect and Trace :: B/100: Collecting 300 samples in estimated 22.251 s (9                                                                                                  Moderator/Inspect and Trace :: B/100                        
+                        time:   [236.37 us 241.58 us 247.19 us]
+Found 12 outliers among 300 measurements (4.00%)
+  10 (3.33%) high mild
+  2 (0.67%) high severe
+Benchmarking Moderator/Inspect and Trace :: B/250: Collecting 300 samples in estimated 25.372 s (9                                                                                                  Moderator/Inspect and Trace :: B/250                        
+                        time:   [255.06 us 261.70 us 268.66 us]
+Found 17 outliers among 300 measurements (5.67%)
+  11 (3.67%) high mild
+  6 (2.00%) high severe
+Benchmarking Moderator/Inspect and Trace :: B/500: Collecting 300 samples in estimated 22.143 s (9                                                                                                  Moderator/Inspect and Trace :: B/500                        
+                        time:   [246.05 us 251.59 us 257.46 us]
 Found 15 outliers among 300 measurements (5.00%)
-  4 (1.33%) low severe
-  3 (1.00%) low mild
-  4 (1.33%) high mild
-  4 (1.33%) high severe
-Benchmarking Moderator/Inspect and Trace :: B/250: Collecting 300 samples in estimated 17.965 s (90k iter                                                                                                         Moderator/Inspect and Trace :: B/250                        
-                        time:   [198.72 us 198.78 us 198.87 us]
-Found 30 outliers among 300 measurements (10.00%)
-  4 (1.33%) low severe
-  10 (3.33%) low mild
-  6 (2.00%) high mild
-  10 (3.33%) high severe
-Benchmarking Moderator/Inspect and Trace :: B/500: Collecting 300 samples in estimated 17.997 s (90k iter                                                                                                         Moderator/Inspect and Trace :: B/500                        
-                        time:   [199.59 us 199.63 us 199.67 us]
-Found 22 outliers among 300 measurements (7.33%)
-  3 (1.00%) low severe
-  6 (2.00%) low mild
-  7 (2.33%) high mild
-  6 (2.00%) high severe
-Benchmarking Moderator/Inspect and Trace :: B/750: Collecting 300 samples in estimated 18.091 s (90k iter                                                                                                         Moderator/Inspect and Trace :: B/750                        
-                        time:   [200.40 us 200.49 us 200.60 us]
-Found 16 outliers among 300 measurements (5.33%)
-  3 (1.00%) low severe
-  7 (2.33%) low mild
-  1 (0.33%) high mild
-  5 (1.67%) high severe
-Benchmarking Moderator/Inspect and Trace :: B/1000: Collecting 300 samples in estimated 18.382 s (90k ite                                                                                                         Moderator/Inspect and Trace :: B/1000                        
-                        time:   [203.37 us 203.41 us 203.45 us]
-Found 25 outliers among 300 measurements (8.33%)
-  6 (2.00%) low severe
-  8 (2.67%) low mild
-  7 (2.33%) high mild
-  4 (1.33%) high severe
-Benchmarking Moderator/Inspect and Trace :: B/2500: Collecting 300 samples in estimated 19.167 s (90k ite                                                                                                         Moderator/Inspect and Trace :: B/2500                        
-                        time:   [211.81 us 211.94 us 212.12 us]
-Found 13 outliers among 300 measurements (4.33%)
-  1 (0.33%) low mild
-  6 (2.00%) high mild
-  6 (2.00%) high severe
-Benchmarking Moderator/Inspect and Trace :: B/5000: Collecting 300 samples in estimated 20.299 s (90k ite                                                                                                         Moderator/Inspect and Trace :: B/5000                        
-                        time:   [224.84 us 224.92 us 225.05 us]
-Found 35 outliers among 300 measurements (11.67%)
-  14 (4.67%) low severe
-  11 (3.67%) low mild
-  3 (1.00%) high mild
+  8 (2.67%) high mild
   7 (2.33%) high severe
-Benchmarking Moderator/Inspect and Trace :: B/7500: Collecting 300 samples in estimated 21.485 s (90k ite                                                                                                         Moderator/Inspect and Trace :: B/7500                        
-                        time:   [237.78 us 237.88 us 238.04 us]
-Found 25 outliers among 300 measurements (8.33%)
-  1 (0.33%) low severe
-  7 (2.33%) low mild
-  6 (2.00%) high mild
-  11 (3.67%) high severe
-Benchmarking Moderator/Inspect and Trace :: B/8000: Collecting 300 samples in estimated 21.756 s (90k ite                                                                                                         Moderator/Inspect and Trace :: B/8000                        
-                        time:   [240.47 us 240.52 us 240.56 us]
-Found 31 outliers among 300 measurements (10.33%)
-  7 (2.33%) low severe
-  14 (4.67%) low mild
-  6 (2.00%) high mild
-  4 (1.33%) high severe
-Benchmarking Moderator/Inspect and Trace :: B/9000: Collecting 300 samples in estimated 22.268 s (90k ite                                                                                                         Moderator/Inspect and Trace :: B/9000                        
-                        time:   [246.39 us 246.52 us 246.67 us]
-Found 20 outliers among 300 measurements (6.67%)
-  9 (3.00%) low mild
-  4 (1.33%) high mild
-  7 (2.33%) high severe
-Benchmarking Moderator/Inspect and Trace :: B/10000: Collecting 300 samples in estimated 22.620 s (90k it                                                                                                         Moderator/Inspect and Trace :: B/10000                        
-                        time:   [250.70 us 250.76 us 250.82 us]
-Found 21 outliers among 300 measurements (7.00%)
-  5 (1.67%) low severe
-  10 (3.33%) low mild
-  1 (0.33%) high mild
-  5 (1.67%) high severe
-Benchmarking Moderator/Generate Tokens :: /1: Collecting 300 samples in estimated 11.823 s (226k iteratio                                                                                                         Moderator/Generate Tokens :: /1                        
-                        time:   [52.204 us 52.244 us 52.291 us]
-Found 11 outliers among 300 measurements (3.67%)
-  1 (0.33%) low severe
-  4 (1.33%) low mild
-  1 (0.33%) high mild
-  5 (1.67%) high severe
-Benchmarking Moderator/Generate Tokens :: /10: Collecting 300 samples in estimated 10.075 s (19k iteratio                                                                                                         Moderator/Generate Tokens :: /10                        
-                        time:   [526.54 us 529.45 us 533.17 us]
-Found 40 outliers among 300 measurements (13.33%)
-  11 (3.67%) low mild
-  2 (0.67%) high mild
-  27 (9.00%) high severe
-Benchmarking Moderator/Generate Tokens :: /100: Collecting 300 samples in estimated 11.049 s (2100 iterat                                                                                                         Moderator/Generate Tokens :: /100                        
-                        time:   [5.2491 ms 5.2502 ms 5.2512 ms]
-Found 14 outliers among 300 measurements (4.67%)
-  2 (0.67%) low severe
-  5 (1.67%) low mild
-  6 (2.00%) high mild
-  1 (0.33%) high severe
-Benchmarking Moderator/Generate Tokens :: /500: Collecting 300 samples in estimated 15.796 s (600 iterati                                                                                                         Moderator/Generate Tokens :: /500                        
-                        time:   [26.331 ms 26.631 ms 27.008 ms]
-Found 31 outliers among 300 measurements (10.33%)
-  1 (0.33%) low severe
-  7 (2.33%) low mild
-  4 (1.33%) high mild
-  19 (6.33%) high severe
-Benchmarking Moderator/Generate Tokens :: /1000: Collecting 300 samples in estimated 204.82 s (3900 itera                                                                                                         Moderator/Generate Tokens :: /1000                        
-                        time:   [52.383 ms 52.397 ms 52.410 ms]
-Found 5 outliers among 300 measurements (1.67%)
-  2 (0.67%) low mild
-  2 (0.67%) high mild
-  1 (0.33%) high severe
-Benchmarking Moderator/Generate Tokens :: /2500: Collecting 300 samples in estimated 236.01 s (1800 itera                                                                                                         Moderator/Generate Tokens :: /2500                        
-                        time:   [131.04 ms 131.08 ms 131.13 ms]
-Found 5 outliers among 300 measurements (1.67%)
-  3 (1.00%) low mild
+Benchmarking Moderator/Inspect and Trace :: B/750: Collecting 300 samples in estimated 25.551 s (9                                                                                                  Moderator/Inspect and Trace :: B/750                        
+                        time:   [248.72 us 255.26 us 262.02 us]
+Found 12 outliers among 300 measurements (4.00%)
+  10 (3.33%) high mild
   2 (0.67%) high severe
-Benchmarking Moderator/Generate Tokens :: /5000: Collecting 300 samples in estimated 236.88 s (900 iterations)^C
+Benchmarking Moderator/Inspect and Trace :: B/1000: Collecting 300 samples in estimated 20.524 s (                                                                                                  Moderator/Inspect and Trace :: B/1000                        
+                        time:   [270.32 us 280.54 us 291.47 us]
+Found 6 outliers among 300 measurements (2.00%)
+  5 (1.67%) high mild
+  1 (0.33%) high severe
+Benchmarking Moderator/Generate Tokens :: /1: Collecting 300 samples in estimated 12.586 s (181k i                                                                                                  Moderator/Generate Tokens :: /1                        
+                        time:   [67.405 us 69.559 us 71.849 us]
+Found 8 outliers among 300 measurements (2.67%)
+  5 (1.67%) high mild
+  3 (1.00%) high severe
+
