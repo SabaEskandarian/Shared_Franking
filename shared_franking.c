@@ -80,12 +80,12 @@ int send(uint8_t* user_key, uint8_t* msg, int msg_len, int num_servers, uint8_t*
 
 //input s is 16 bytes
 //output h is 32 bytes
-//output server_out is ct_share_len + (\ell + |ctx|) + 2\lambda'' = ct_share_len + (32 + CTX_LEN) + 64
+//output server_out is ct_share_len + (\ell + |ctx|) + \lambda'' = ct_share_len + (32 + CTX_LEN) + 32
 //return 0 on fail, 1 on success
 int process(uint8_t* s, int ct_share_len, uint8_t* h, uint8_t* server_out)
 {
     //expand s via PRG to get the output share
-    if(1 != prg(s, server_out, ct_share_len + 32 + CTX_LEN + 64))
+    if(1 != prg(s, server_out, ct_share_len + 32 + CTX_LEN + 32))
     {
         printf("error in PRG\n");
         return 0;
@@ -99,7 +99,7 @@ int process(uint8_t* s, int ct_share_len, uint8_t* h, uint8_t* server_out)
 
 //input mod_key has length 32
 //input r has length 16
-//output server_out is ct_share_len + (\ell + |ctx|) + 2\lambda'' = ct_share_len + (32 + CTX_LEN) + 64
+//output server_out is ct_share_len + (\ell + |ctx|) + \lambda'' = ct_share_len + (32 + CTX_LEN) + 32
 int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_share_len, uint8_t* s, uint8_t* context, uint8_t* s_hashes, uint8_t* server_out)
 {
     //copy ct to server output
@@ -122,8 +122,8 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
     }
 
     //generate u, mask on latter part of server output, as prg of s
-    uint8_t* mask = malloc(CTX_LEN + 32 + 64);
-    if(1 != prg(s, mask, CTX_LEN + 32 + 64))
+    uint8_t* mask = malloc(CTX_LEN + 32 + 32);
+    if(1 != prg(s, mask, CTX_LEN + 32 + 32))
     {
         printf("error in PRG\n");
         free(tag_data);
@@ -131,62 +131,21 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
         return 0;
     }
 
-    //generate k_r, H_p([c_2]_1, h, ctx, sigma), compute sigma_r
-    mpz_t k_r, Hp_out, sigma_r, modulus;
-    mpz_init2(k_r, 256);
-    mpz_init2(Hp_out, 256);
-    mpz_init2(sigma_r, 512);
-    mpz_init2(modulus, 257);
-
-    //generate k_r, which goes at the end of the output
-    uint8_t* k_r_bytes = server_out + ct_share_len + CTX_LEN + 64;
-    if(1 != RAND_priv_bytes(k_r_bytes, 32))
-    {
-        printf("couldn't get randomness!\n");
-        return 0;
-    }
-    //import k_r as a number
-    mpz_import(k_r, 32, -1, sizeof(uint8_t), 0, 0, k_r_bytes);
-
-
-    //copy the tag to the end of the tag data in preparation for computing sigma_r
+    //copy the tag to the end of the tag data in preparation for computing sigma_c
     memcpy(tag_data+tag_data_length, server_out + ct_share_len + CTX_LEN, 32);
 
-    uint8_t* Hp_out_bytes = malloc(32);
-    digest_message(tag_data, tag_data_length + 32, Hp_out_bytes);
-    mpz_import(Hp_out, 32, -1, sizeof(uint8_t), 0, 0, Hp_out_bytes);
+    //compute sigma_c
+    uint8_t* sigma_c = server_out + ct_share_len + CTX_LEN + 32;
+    digest_message(tag_data, tag_data_length + 32, sigma_c);
 
-    //compute sigma_r, mod by 2^256-189 and export to bytes
-    mpz_mul(sigma_r, k_r, Hp_out);
-
-    //set up the modulus
-    mpz_ui_pow_ui(modulus, 2, 256);
-    mpz_sub_ui(modulus, modulus, 189);
-
-    mpz_mod(sigma_r, sigma_r, modulus);
-
-    uint8_t* sigma_r_bytes = server_out + ct_share_len + CTX_LEN + 32;
-
-
-    //zero out the bytes to be exported onto in case what is written comes up short
-    memset(sigma_r_bytes, 0, 32);
-
-    //size_t* temp = malloc(4);
-    //mpz_export(sigma_r_bytes, temp, -1, sizeof(uint8_t), 0, 0, sigma_r);
-    mpz_export(sigma_r_bytes, NULL, -1, sizeof(uint8_t), 0, 0, sigma_r);
-
-    //printf("bytes exported: %ld", *temp);
-
-    //xor the mask into (ctx,\sigma,\sigma_r,k_r)
-    for(int i = 0; i < CTX_LEN + 32 + 64; i++)
+    //xor the mask into (ctx,\sigma,\sigma_c)
+    for(int i = 0; i < CTX_LEN + 32 + 32; i++)
     {
         server_out[ct_share_len + i] = server_out[ct_share_len + i] ^ mask[i];
     }
 
     free(tag_data);
     free(mask);
-    free(Hp_out_bytes);
-    mpz_clears(k_r, Hp_out, sigma_r, modulus, NULL);
 
     return 1;
 }
@@ -207,7 +166,7 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
         }
     }
 
-    int c1_len = share_len - (CTX_LEN + 32 + 64) - 32 - 16;
+    int c1_len = share_len - (CTX_LEN + 32 + 32) - 32 - 16;
     uint8_t* c1_ct = merged_ct; //c1 is main ciphertext (incl. iv)
     uint8_t* c1_tag = merged_ct + c1_len;
     uint8_t* c2_pointer = merged_ct + c1_len + 16; //c2 is the compactly committing tag
@@ -229,9 +188,9 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
     memcpy(msg, plaintext, pt_len - 16);
     memcpy(r, plaintext + pt_len - 16, 16);
 
-    //space to place inputs to H_p
-    int mac_data_len = 32 + (num_servers-1)*32 + CTX_LEN + 32;
-    uint8_t* mac_data = malloc(mac_data_len);
+    //space to place inputs to H'
+    int hash_data_len = 32 + (num_servers-1)*32 + CTX_LEN + 32;
+    uint8_t* mac_data = malloc(hash_data_len);
 
     //use PRG on r to get s_i for i\in 1...num_servers
     int prg_output_len = num_servers*16;
@@ -244,7 +203,7 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
         return 0;
     }
 
-    int mask_len = CTX_LEN + 32 + 64; //length of c3
+    int mask_len = CTX_LEN + 32 + 32; //length of c3
     int full_ct_len = share_len - mask_len;
     uint8_t* share = malloc(full_ct_len+mask_len);
     uint8_t* si;
@@ -252,7 +211,7 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
     //generate the PRG outputs for each si and xor in appropriate places
     //this part will:
     //compute [c_2]_1, put it in the beginning of the mac data
-    //unmask c3 so its contents (CTX||tag||sigma_r||k_r) can be used to verify the mac
+    //unmask c3 so its contents (CTX||tag||sigma_c) can be used to verify the mac
     //also compute the hashes of the s_vector values and put them in mac data after [c_2]_1
 
     //s1 first because it's a special case
@@ -296,47 +255,26 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
         digest_message(si, 16, mac_data + 32 + 32*(i-1));
     }
 
-    //copy [c_2]_1 into place for MAC and output
+    //copy [c_2]_1 into place for hash and output
     memcpy(mac_data, merged_ct + full_ct_len - 32, 32);
     memcpy(c2_1, merged_ct + full_ct_len - 32, 32);
 
-    //copy ctx into place for MAC and output
-    memcpy(mac_data + mac_data_len - 32 - CTX_LEN, merged_ct + full_ct_len, CTX_LEN);
+    //copy ctx into place for hash and output
+    memcpy(mac_data + hash_data_len - 32 - CTX_LEN, merged_ct + full_ct_len, CTX_LEN);
     memcpy(ctx, merged_ct + full_ct_len, CTX_LEN);
 
-    //copy sigma into place for MAC and output
-    memcpy(mac_data + mac_data_len - 32, merged_ct + full_ct_len + CTX_LEN, 32);
+    //copy sigma into place for hash and output
+    memcpy(mac_data + hash_data_len - 32, merged_ct + full_ct_len + CTX_LEN, 32);
     memcpy(sigma, merged_ct + full_ct_len + CTX_LEN, 32);
 
-    //hash the one time mac data
-    uint8_t* Hp_out_bytes = malloc(32);
-    digest_message(mac_data, mac_data_len, Hp_out_bytes);
+    //compute sigma_c
+    uint8_t* sigma_c_recomputed = malloc(32);
+    digest_message(mac_data, hash_data_len, sigma_c_recomputed);
+    
+    uint8_t* sigma_c = merged_ct + full_ct_len + CTX_LEN + 32;
 
-    //check that sigma_r = k_r * Hp_out
-    mpz_t k_r, Hp_out, sigma_r, sigma_r_computed, modulus;
-    mpz_init2(k_r, 256);
-    mpz_init2(Hp_out, 256);
-    mpz_init2(sigma_r, 256);
-    mpz_init2(sigma_r_computed, 512);
-    mpz_init2(modulus, 257);
-
-    uint8_t* sigma_r_bytes = merged_ct + full_ct_len + CTX_LEN + 32;
-    uint8_t* k_r_bytes = merged_ct + full_ct_len + CTX_LEN + 64;
-
-    mpz_import(k_r, 32, -1, sizeof(uint8_t), 0, 0, k_r_bytes);
-    mpz_import(sigma_r, 32, -1, sizeof(uint8_t), 0, 0, sigma_r_bytes);
-    mpz_import(Hp_out, 32, -1, sizeof(uint8_t), 0, 0, Hp_out_bytes);
-
-
-    //set up the modulus
-    mpz_ui_pow_ui(modulus, 2, 256);
-    mpz_sub_ui(modulus, modulus, 189);
-
-    //recompute tag sigma_r
-    mpz_mul(sigma_r_computed, k_r, Hp_out);
-    mpz_mod(sigma_r_computed, sigma_r_computed, modulus);
-
-    if(mpz_cmp(sigma_r, sigma_r_computed) != 0)
+    //check that sigma_c = H'(*)
+    if(memcmp(sigma_c_recomputed, sigma_c , 32) != 0)
     {
         printf("failed tag verification!\n");
         free(merged_ct);
@@ -344,8 +282,7 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
         free(prg_outputs);
         free(mac_data);
         free(share);
-        free(Hp_out_bytes);
-        mpz_clears(k_r, Hp_out, sigma_r, sigma_r_computed, modulus, NULL);
+        free(sigma_c_recomputed);
         return 0;
     }
 
@@ -354,12 +291,10 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
     free(prg_outputs);
     free(mac_data);
     free(share);
-    free(Hp_out_bytes);
-    mpz_clears(k_r, Hp_out, sigma_r, sigma_r_computed, modulus, NULL);
+    free(sigma_c_recomputed);
 
     return pt_len - 16;
 }
-
 
 //output 1 is accept, 0 is reject
 int verify(uint8_t* mod_key, int num_servers, uint8_t* msg, int msg_len, uint8_t* r, uint8_t* c2_1, uint8_t* ctx, uint8_t* sigma, uint8_t* fo)

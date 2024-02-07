@@ -83,7 +83,7 @@ int main()
                 memset(msg, 'a', msg_len);
                 uint8_t* write_request_vector;
                 uint8_t* s_hashes = malloc((num_servers-1)*32);
-                int server_output_size = 12 + (msg_len+16+32) + 16 + 32 + (32 + CTX_LEN + 64);
+                int server_output_size = 12 + (msg_len+16+32) + 16 + 32 + (32 + CTX_LEN + 32);
                 uint8_t* server_responses = malloc(num_servers*server_output_size);
 
                 uint8_t* msg_recovered = malloc(msg_len);
@@ -172,7 +172,7 @@ int main()
                 }
 
                 //read
-                int share_len = ct_share_len + CTX_LEN + 32 + 64;
+                int share_len = ct_share_len + CTX_LEN + 32 + 32;
 
                 clock_gettime( CLOCK_REALTIME, &start );
                 int recovered_len = read(user_key, num_servers, server_responses, share_len, msg_recovered, r, c2_1, ctx, sigma, fo);

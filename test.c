@@ -169,7 +169,7 @@ int shared_franking_tests()
     int msg_len = strlen(msg);
     uint8_t* write_request_vector;
     uint8_t* s_hashes = malloc((max_servers-1)*32); //just make things big enough for the bigger test
-    int server_output_size = 12 + (msg_len+16+32) + 16 + 32 + (32 + CTX_LEN + 64);
+    int server_output_size = 12 + (msg_len+16+32) + 16 + 32 + (32 + CTX_LEN + 32);
     uint8_t* server_responses = malloc(max_servers*server_output_size);
 
     uint8_t* msg_recovered = malloc(msg_len);
@@ -243,7 +243,7 @@ int shared_franking_tests()
         //server_responses[2*server_output_size-70] = server_responses[2*server_output_size-70] ^ 0xff;
 
         //read
-        int share_len = ct_share_len + CTX_LEN + 32 + 64;
+        int share_len = ct_share_len + CTX_LEN + 32 + 32;
         int recovered_len = read(user_key, num_servers, server_responses, share_len, msg_recovered, r, c2_1, ctx, sigma, fo);
         if(recovered_len != msg_len)
         {
