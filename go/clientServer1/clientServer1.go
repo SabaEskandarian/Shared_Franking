@@ -99,11 +99,7 @@ func main() {
     
     //data structures we'll need
     ciphertexts := make([][]byte, numServers)
-    hashes := make([][]byte, numServers)    
-    for i:=0; i < numServers; i++ {
-    	hashes[i] = make([]byte, 32)
-    }
-    flatHashes := make([]byte, 32 * numServers)
+    hashes := make([]byte, 32*numServers)
     
     log.Printf("msgLen, mean_processing_time, numServers=%d\n", numServers+1)
     
@@ -173,7 +169,7 @@ func main() {
 		  	  count := 0
 				//read hash
 				for count < 32 {
-				    n, err:= conns[i].Read(hashes[i][count:])
+				    n, err:= conns[i].Read(hashes[32*i+count:])
 				    count += n
 				    if err != nil && count != 32{
 				        log.Println(err)
@@ -181,15 +177,13 @@ func main() {
 				    }
 				}
 			}
-			for i:=0; i < numServers; i++ {
-				flatHashes = append(flatHashes, hashes[i]...)
-			}
+			log.Printf("hash: %x",hashes)
 			
 			//moderator does processing
 			ctShareLen := 12 + (msgLen+16+32) + 16 + 32;
 
 			modSeed := writeRequests[seedStartingPoint - 16: seedStartingPoint]
-			res := C.mod_process(C.int(numServers), (*C.uchar)(&modKey[0]), writeRequestVector, C.int(ctShareLen), (*C.uchar)(&modSeed[0]), (*C.uchar)(&ctx[0]), (*C.uchar)(&flatHashes[0]), (*C.uchar)(&serverOutputs[0][0]))
+			res := C.mod_process(C.int(numServers), (*C.uchar)(&modKey[0]), writeRequestVector, C.int(ctShareLen), (*C.uchar)(&modSeed[0]), (*C.uchar)(&ctx[0]), (*C.uchar)(&hashes[0]), (*C.uchar)(&serverOutputs[0][0]))
 			if res != 1 {
 				log.Println("something went wrong in moderator processing!")
 			}
