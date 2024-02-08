@@ -1,5 +1,5 @@
 CC=gcc
-LIBS=-lcrypto -lm -lgmp
+LIBS=-lcrypto -lm
 CFLAGS=-I.
 DEPS = crypto_tools.h shared_franking.h
 
