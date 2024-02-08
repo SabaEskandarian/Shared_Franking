@@ -31,7 +31,7 @@ func main() {
 
     maxMsgLen := 1020
     msgLenIncrements := 20
-    numIterations := 1000
+    numIterations := 10
     CTX_LEN := 32
     
     numServers:= 1

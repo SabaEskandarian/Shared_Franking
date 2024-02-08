@@ -1,0 +1,17 @@
+All times in microseconds on GCP e2-standard-4 instance
+intel broadwell platform, ubuntu 22.04
+
+Hecate GCP (1kb messages)
+
+sender frank 36.096 us 37.134 us
+verify 215.80 us
+sign timestamp 32.012 us
+inspect and trace 222.94 us
+gen tokens 61.314
+
+amaze GCP (1kb message)
+
+keygen 42.754 us
+franking 521.78 us
+verifying 512.61 us
+judging 512.74 us
