@@ -177,7 +177,7 @@ func main() {
 				    }
 				}
 			}
-			log.Printf("hash: %x",hashes)
+			//log.Printf("hash: %x",hashes)
 			
 			//moderator does processing
 			ctShareLen := 12 + (msgLen+16+32) + 16 + 32;
