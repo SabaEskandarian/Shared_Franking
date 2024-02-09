@@ -1,0 +1,18 @@
+
+Run on 11th Gen Intel(R) Core(TM) i7-11700K @ 3.60G
+Ubuntu 20.04 LTS
+using our terminology for the various operations
+
+hecate, 1kb message
+preprocess 29.540 us
+send 16.408 us
+process 15.742 us
+read 100.08 us
+verify 102.75 us
+
+amaze (AMF), 1kb message
+keygen 18.911 us
+frank 232.65 us
+read 226.32 us
+verify 226.35 us
+
