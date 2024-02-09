@@ -3,7 +3,7 @@ intel broadwell platform, ubuntu 22.04
 
 Hecate GCP (1kb messages)
 
-sender frank 36.096 us 37.134 us
+sender frank 36.096 us
 verify 215.80 us
 sign timestamp 32.012 us
 inspect and trace 222.94 us
