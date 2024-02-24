@@ -12,7 +12,7 @@ import "C"
 import (
     "log"
     "crypto/tls"
-    "net"
+    //"net"
     "os"
     "time"
     "unsafe"
@@ -34,23 +34,23 @@ func main() {
     numIterations := 10
     CTX_LEN := 32
     
-    numServers:= 1
+    numServers:= 2
+    numOtherServers := 1
     numServersMax := 10
-    serverAddrs := make([]string, numServersMax)
+    server1Addr := ""
     
-    
+    var err error
+
     if len(os.Args) < 3 {
-        log.Println("clientServer1 [numServers] [serverAddr2] ... [serverAddrN]")
+        log.Println("client [numServers] [server1Addr]")
         return
     } else {
     	numServers, _ = strconv.Atoi(os.Args[1]) 
-    	numServers = numServers - 1 //this is the first servers, so there are N - 1 others
+		numOtherServers = numServers - 1
     	if numServers > numServersMax {
     		log.Println("numServers exceeds maximum")
     	}
-    	for i:=0; i < numServers; i++ {
-    		serverAddrs[i] = os.Args[i+2]
-    	}
+    	server1Addr = os.Args[2]
     }
     
     conf := &tls.Config{
@@ -71,70 +71,53 @@ func main() {
         log.Println(err)
         return
     }
-    
-    modKey := make([]byte, 32)
-    _,err =rand.Read(modKey)
-    if err != nil {
-    	log.Println("moderator keygen issue: ")
-    }
-    
+
     userKey := make([]byte, 16)
     _,err =rand.Read(userKey)
     if err != nil {
     	log.Println("user keygen issue: ")
     }
+
+	ctx := make([]byte, CTX_LEN)
+	for i := 0; i < CTX_LEN; i++ {
+		ctx[i] = 'c'
+	}
     
-    
-    //set up connections to all the servers
-    conns := make([]net.Conn, numServers)
-    for i:=0; i < numServers; i++ {
-    	conns[i], err = tls.Dial("tcp", serverAddrs[i], conf)
-    	if err != nil {
-        	log.Println(err)
-        	return
-    	}
-    	conns[i].SetDeadline(time.Time{})
-    	defer conns[i].Close()
-    }
     
     //data structures we'll need
-    ciphertexts := make([][]byte, numServers)
-    hashes := make([]byte, 32*numServers)
+    ciphertexts := make([][]byte, numOtherServers)
     
-    log.Printf("msgLen, mean_processing_time, numServers=%d\n", numServers+1)
+	log.Printf("client observed message processing time")
+    log.Printf("msgLen, mean_processing_time, numServers=%d\n", numServers)
     
 	for msgLen := msgLenIncrements; msgLen <= maxMsgLen; msgLen += msgLenIncrements {
 		var totalTime time.Duration
 		
-		
 		serverOutputSize := 12 + (msgLen+16+32) + 16 + 32 + (32 + CTX_LEN + 32);
-		serverOutputs := make([][]byte, numServers+1)
-		for i := 0; i <= numServers; i++ {
+		serverOutputs := make([][]byte, numServers)
+		for i := 0; i < numServers; i++ {
 			serverOutputs[i] = make([]byte, serverOutputSize)
 		}
-
 		
 		msg := make([]byte, msgLen)
 		for i := 0; i < msgLen; i++ {
 			msg[i] = 'a'
 		}
-		
-		ctx := make([]byte, CTX_LEN)
-		for i := 0; i < CTX_LEN; i++ {
-			ctx[i] = 'c'
-		}
-	
+
 		for i:= 0; i < numIterations; i++ {
+
+			//start timer
+			startTime := time.Now()
 
 			//have the client prepare request
 			var writeRequestVector *C.uchar
 			writeRequestLen := int(C.send((*C.uchar)(&userKey[0]), (*C.uchar)(&msg[0]), C.int(msgLen), C.int(numServers), &writeRequestVector))
 			writeRequests := C.GoBytes(unsafe.Pointer(writeRequestVector), C.int(writeRequestLen))
-			seedStartingPoint := writeRequestLen - numServers * 16
+			seedStartingPoint := writeRequestLen - numOtherServers * 16
 		
 			//encrypt the requests for all the servers
 			
-			for i:= 0; i < numServers; i++ {
+			for i:= 0; i < numOtherServers; i++ {
 			
 			    var nonce [24]byte
 				//fill nonce with randomness
@@ -145,54 +128,102 @@ func main() {
 				ciphertexts[i] = box.Seal(nonce[:], writeRequests[seedStartingPoint + i * 16:seedStartingPoint + (i+1) * 16], &nonce, sPublicKey, clientSecretKey)
 				
 			}
-		
-			//start timer
-			startTime := time.Now()
-			
-			//moderator sends requests to other servers
-			for i:=0; i < numServers; i++ {
-				//send data
-				n, err := conns[i].Write(ciphertexts[i])
+
+			//connect to moderator server
+			conn, err := tls.Dial("tcp", server1Addr, conf)
+			if err != nil {
+				log.Println(err)
+				return
+			}
+			conn.SetDeadline(time.Time{})
+
+			//send writeRequestLen to moderator
+			n,err := conn.Write(intToByte(writeRequestLen))
+			if err != nil {
+				log.Println(n, err)
+				return
+			}
+
+			//send stuff to moderator
+			n,err = conn.Write(writeRequests[:seedStartingPoint])
+			if err != nil {
+				log.Println(n, err)
+				return
+			}
+			for i := 0; i < numOtherServers; i++ {
+				n,err = conn.Write(ciphertexts[i])
 				if err != nil {
 					log.Println(n, err)
 					return
 				}
-				//log.Printf("i: %d, n: %d\n", i, n)
 			}
-			
-			//log.Println("wrote all messages to other servers")
-		
-			//moderator awaits responses
-			//doing this sequentially per connection
-			//could speed up by using a thread per connection so they don't have to come back in order
-			for i:=0; i < numServers; i++ {
-		  	  count := 0
-				//read hash
-				for count < 32 {
-				    n, err:= conns[i].Read(hashes[32*i+count:])
+
+			//receive back shares of the message
+			serverOutputSize := 12 + (msgLen+16+32) + 16 + 32 + (32 + CTX_LEN + 32)
+			serverCtSize := serverOutputSize + 24 + box.Overhead
+			shares := make([]byte, serverOutputSize * numServers)
+			serverCt := make([]byte, serverCtSize)
+			//first the server 1 share, then the ciphertexts of others'
+			count := 0
+			//read first message share
+			for count < serverOutputSize {
+				n, err:= conn.Read(shares[count:serverOutputSize])
+				count += n
+				if err != nil && count != serverOutputSize{
+					log.Println(err)
+					log.Println(n)
+				}
+			}
+			//read and decrypt other server ciphertexts
+			for i := 0; i < numOtherServers; i++ {
+				count = 0
+				for count < serverCtSize {
+				    n, err:= conn.Read(serverCt[count:])
 				    count += n
-				    if err != nil && count != 32{
+				    if err != nil && count != serverCtSize{
 				        log.Println(err)
 				        log.Println(n)
 				    }
 				}
+				//decrypt share
+				var decryptNonce [24]byte
+				copy(decryptNonce[:], serverCt[:24])
+				decryptedShare, ok := box.Open(nil, serverCt[24:], &decryptNonce, sPublicKey, clientSecretKey)
+				copy(shares[serverOutputSize*(i+1):serverOutputSize*(i+2)], decryptedShare)
+				if !ok {
+					log.Println("Decryption not ok!!")
+					log.Printf("decryption nonce: %x\\", decryptNonce)
+				}
 			}
-			//log.Printf("hash: %x",hashes)
-			
-			//moderator does processing
-			ctShareLen := 12 + (msgLen+16+32) + 16 + 32;
 
-			modSeed := writeRequests[seedStartingPoint - 16: seedStartingPoint]
-			res := C.mod_process(C.int(numServers), (*C.uchar)(&modKey[0]), writeRequestVector, C.int(ctShareLen), (*C.uchar)(&modSeed[0]), (*C.uchar)(&ctx[0]), (*C.uchar)(&hashes[0]), (*C.uchar)(&serverOutputs[0][0]))
-			if res != 1 {
-				log.Println("something went wrong in moderator processing!")
-			}
+			//read message
+			recoveredMsg := make([]byte, msgLen)
+			recoveredR := make([]byte, 16)
+			recoveredC2_1 := make([]byte, 32)
+			recoveredSigma := make([]byte, 32)
+			recoveredFo := make([]byte, 32)
+			recoveredCtx := make([]byte, CTX_LEN)
+			_ = int(C.read((*C.uchar)(&userKey[0]), C.int(numServers), (*C.uchar)(&shares[0]), C.int(serverOutputSize), (*C.uchar)(&recoveredMsg[0]), (*C.uchar)(&recoveredR[0]), (*C.uchar)(&recoveredC2_1[0]), (*C.uchar)(&recoveredCtx[0]), (*C.uchar)(&recoveredSigma[0]), (*C.uchar)(&recoveredFo[0])))
+
+			conn.Close()
 			
 			elapsedTime := time.Since(startTime)
 			totalTime += elapsedTime
-		
-			//skipping the read/verify part because that's not part of this portion of the evaluation
-			
+
+			//check we read the right message and context
+			for i:=0; i < msgLen; i++ {
+				if msg[i] != recoveredMsg[i] {
+					log.Println("decryption got wrong message!")
+				}
+			}
+			for i:=0; i < CTX_LEN; i++ {
+				if ctx[i] != recoveredCtx[i] {
+					log.Println("read wrong context!")
+				}
+			}
+
+			//TODO verify?
+
 			//log.Printf("iteration %d completed\n", i)
 				
 		}

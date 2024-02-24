@@ -1,4 +1,4 @@
-module clientServer1
+module server1
 
 go 1.18
 

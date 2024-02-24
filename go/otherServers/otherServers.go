@@ -16,6 +16,7 @@ import (
     "os"
     //"unsafe"
     "io"
+    "crypto/rand"
     "golang.org/x/crypto/nacl/box"
     "strings"
 )
@@ -119,12 +120,21 @@ func main() {
             
             //log.Println("wrote back\n")
             
-            //NOTE: from here on is not the timed part, so not including for this test
+
+            //encrypt the output share to the client and send back to server 1
+            var nonce [24]byte
+            //fill nonce with randomness
+            _, err = rand.Read(nonce[:])
+            if err != nil{
+                log.Println("couldn't get randomness for nonce!")
+            }
+            ciphertext := box.Seal(nonce[:], outputShare, &nonce, clientPublicKey, secretKey)
+
             //write back the output share
-            //_,err = conn.Write(outputShare)
-            //if err != nil {
-            //	log.Println(err)
-            //}
+            _,err = conn.Write(ciphertext)
+            if err != nil {
+            	log.Println(err)
+            }
     	}
     }
     
