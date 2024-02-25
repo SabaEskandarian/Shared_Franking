@@ -100,7 +100,7 @@ func main() {
             
             hash := make([]byte, 32)
             serverOutputSize := 12 + (msgLen+16+32) + 16 + 32 + (32 + CTX_LEN + 32)
-            
+
             outputShare := make([]byte, serverOutputSize)
             
             //process the message

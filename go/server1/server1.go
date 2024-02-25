@@ -134,14 +134,14 @@ func main() {
 			writeRequestLen := byteToInt(writeRequestLenBytes)
 
 			seedStartingPoint := writeRequestLen - numServers * 16
-			clientRequestLen := writeRequestLen + (24+box.Overhead)*(numServers-1)
+			clientRequestLen := writeRequestLen + (24+box.Overhead)*(numServers)
 			clientRequest := make([]byte, clientRequestLen)
 
 			count = 0
 			for count < clientRequestLen {
 				n, err:= clientConn.Read(clientRequest[count:])
 				count += n
-				if err != nil && count != 32{
+				if err != nil && count != clientRequestLen{
 					log.Println(err)
 					log.Println(n)
 				}
@@ -149,7 +149,7 @@ func main() {
 
 			ctLen := 24+16+box.Overhead
 			s1Share := clientRequest[:seedStartingPoint]
-			
+
 			//start timer
 			startTime := time.Now()
 
@@ -187,7 +187,7 @@ func main() {
 			ctShareLen := 12 + (msgLen+16+32) + 16 + 32;
 
 			modSeed := clientRequest[seedStartingPoint - 16: seedStartingPoint]
-			res := C.mod_process(C.int(numServers), (*C.uchar)(&modKey[0]), (*C.uchar)(&s1Share[0]), C.int(ctShareLen), (*C.uchar)(&modSeed[0]), (*C.uchar)(&ctx[0]), (*C.uchar)(&hashes[0]), (*C.uchar)(&s1Output[0]))
+			res := C.mod_process(C.int(numServers+1), (*C.uchar)(&modKey[0]), (*C.uchar)(&s1Share[0]), C.int(ctShareLen), (*C.uchar)(&modSeed[0]), (*C.uchar)(&ctx[0]), (*C.uchar)(&hashes[0]), (*C.uchar)(&s1Output[0]))
 			if res != 1 {
 				log.Println("something went wrong in moderator processing!")
 			}

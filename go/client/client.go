@@ -114,7 +114,7 @@ func main() {
 			writeRequestLen := int(C.send((*C.uchar)(&userKey[0]), (*C.uchar)(&msg[0]), C.int(msgLen), C.int(numServers), &writeRequestVector))
 			writeRequests := C.GoBytes(unsafe.Pointer(writeRequestVector), C.int(writeRequestLen))
 			seedStartingPoint := writeRequestLen - numOtherServers * 16
-		
+
 			//encrypt the requests for all the servers
 			
 			for i:= 0; i < numOtherServers; i++ {
@@ -150,6 +150,7 @@ func main() {
 				log.Println(n, err)
 				return
 			}
+
 			for i := 0; i < numOtherServers; i++ {
 				n,err = conn.Write(ciphertexts[i])
 				if err != nil {
@@ -189,9 +190,9 @@ func main() {
 				var decryptNonce [24]byte
 				copy(decryptNonce[:], serverCt[:24])
 				decryptedShare, ok := box.Open(nil, serverCt[24:], &decryptNonce, sPublicKey, clientSecretKey)
-				copy(shares[serverOutputSize*(i+1):serverOutputSize*(i+2)], decryptedShare)
+				copy(shares[serverOutputSize*(i+1):serverOutputSize*(i+2)], decryptedShare[:])
 				if !ok {
-					log.Println("Decryption not ok!!")
+					log.Println("decryption not ok!!")
 					log.Printf("decryption nonce: %x\\", decryptNonce)
 				}
 			}
@@ -221,9 +222,6 @@ func main() {
 					log.Println("read wrong context!")
 				}
 			}
-
-			//TODO verify?
-
 			//log.Printf("iteration %d completed\n", i)
 				
 		}

@@ -138,6 +138,15 @@ int mod_process(int num_servers, uint8_t* mod_key, uint8_t* ct_share, int ct_sha
     uint8_t* sigma_c = server_out + ct_share_len + CTX_LEN + 32;
     digest_message(tag_data, tag_data_length + 32, sigma_c);
 
+    /*
+    printf("debug: hash inputs\n");
+    for(int i = 0; i < tag_data_length+32; i++)
+    {
+        printf("%x", tag_data[i]);
+    }
+    printf("\n\n");
+    */
+
     //xor the mask into (ctx,\sigma,\sigma_c)
     for(int i = 0; i < CTX_LEN + 32 + 32; i++)
     {
@@ -270,6 +279,15 @@ int read(uint8_t* user_key, int num_servers, uint8_t* shares, int share_len, uin
     //compute sigma_c
     uint8_t* sigma_c_recomputed = malloc(32);
     digest_message(mac_data, hash_data_len, sigma_c_recomputed);
+
+    /*
+    printf("debug: hash inputs\n");
+    for(int i = 0; i < hash_data_len; i++)
+    {
+        printf("%x", mac_data[i]);
+    }
+    printf("\n\n");
+    */
     
     uint8_t* sigma_c = merged_ct + full_ct_len + CTX_LEN + 32;
 
